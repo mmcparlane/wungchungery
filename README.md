@@ -1,7 +1,7 @@
 Wungchungery Game Engine
 ========================
 
-TODO: Add objectives.
+TODO
 
 
 Build Steps
@@ -23,7 +23,9 @@ Build Steps
 1. Install the [Emscripten SDK][2] for Windows.
 2. Follow the [instructions][3] to get the SDK running.
 3. Launch `emcmdprompt.bat` by double-clicking.
-4. Set up Visual Studio developer environment variables (for nmake).
+4. Set up Visual Studio developer environment (for nmake).
+
+    Run this bat file from the prompt launched in step 3:
 
     `"C:\Program Files (x86)\Microsoft Visual Studio\2017\BuildTools\Common7\Tools\VsDevCmd.bat"`
 
