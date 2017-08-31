@@ -1,3 +1,3 @@
-Cross-Platform Game Engine
+Wungchungery Cross-Platform Game Engine
 --------------------------
 
