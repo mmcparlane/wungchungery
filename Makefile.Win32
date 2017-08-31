@@ -2,77 +2,94 @@
 # Copyright © Mason McParlane
 #
 
+!IF DEFINED(EMSDK)
+CC = emcc
+CFLAGS = 
+OBJ_EXT = bc
+LIB_EXT = bc
+EXE_EXT = js
+OUT_PFX = "-o "
+OUT_PFX2 = $(OUT_PFX)
+INCLUDE_PFX = -I
+LIBCMD = $(CC)
+LIBFLAGS = $(CFLAGS)
+LNKCMD = $(CC)
+LNKFLAGS = $(CFLAGS)
+
+!ELSE
+CC = cl
+OBJ_EXT = obj
+LIB_EXT = lib
+EXE_EXT = exe
+OUT_PFX = /OUT:
+OUT_PFX2 = /Fo
+INCLUDE_PFX = /I
 LIBCMD = lib
-
 LIBFLAGS = /NOLOGO
-
 LNKCMD = link
+LNKFLAGS =
+NOLINKFLAG = /c
 
-LNKFLAGS = 
-
-BUILD_DIR = build\
-
-WCH_SRC_DIR = src\
-
-WCH_OBJ_DIR = $(BUILD_DIR)\wch\
-
-WCH_OBJS = $(WCH_OBJ_DIR)\engine.obj
-
-LUA_SRC_DIR = libs\lua\lua-5.3.4\src\
-
-LUA_OBJ_DIR = $(BUILD_DIR)\lua\
-
-LUA_OBJS = $(LUA_OBJ_DIR)\lapi.obj \
-	   $(LUA_OBJ_DIR)\lcode.obj \
-	   $(LUA_OBJ_DIR)\lctype.obj \
-	   $(LUA_OBJ_DIR)\ldebug.obj \
-	   $(LUA_OBJ_DIR)\ldo.obj \
-	   $(LUA_OBJ_DIR)\ldump.obj \
-	   $(LUA_OBJ_DIR)\lfunc.obj \
-	   $(LUA_OBJ_DIR)\lgc.obj \
-	   $(LUA_OBJ_DIR)\llex.obj \
-	   $(LUA_OBJ_DIR)\lmem.obj \
-	   $(LUA_OBJ_DIR)\lobject.obj \
-	   $(LUA_OBJ_DIR)\lopcodes.obj \
-	   $(LUA_OBJ_DIR)\lparser.obj \
-	   $(LUA_OBJ_DIR)\lstate.obj \
-	   $(LUA_OBJ_DIR)\lstring.obj \
-	   $(LUA_OBJ_DIR)\ltable.obj \
-	   $(LUA_OBJ_DIR)\ltm.obj \
-	   $(LUA_OBJ_DIR)\lundump.obj \
-	   $(LUA_OBJ_DIR)\lvm.obj \
-	   $(LUA_OBJ_DIR)\lzio.obj \
-	   $(LUA_OBJ_DIR)\lauxlib.obj \
-	   $(LUA_OBJ_DIR)\lbaselib.obj \
-	   $(LUA_OBJ_DIR)\lbitlib.obj \
-	   $(LUA_OBJ_DIR)\lcorolib.obj \
-	   $(LUA_OBJ_DIR)\ldblib.obj \
-	   $(LUA_OBJ_DIR)\liolib.obj \
-	   $(LUA_OBJ_DIR)\lmathlib.obj \
-	   $(LUA_OBJ_DIR)\loslib.obj \
-	   $(LUA_OBJ_DIR)\lstrlib.obj \
-	   $(LUA_OBJ_DIR)\ltablib.obj \
-	   $(LUA_OBJ_DIR)\lutf8lib.obj \
-	   $(LUA_OBJ_DIR)\loadlib.obj \
-	   $(LUA_OBJ_DIR)\linit.obj
+!ENDIF
 
 
-all: $(BUILD_DIR)\engine.exe
+BUILD_DIR = build
 
-$(BUILD_DIR)\engine.exe: $(WCH_OBJS) $(BUILD_DIR)\lua.lib
-	$(LNKCMD) $(LNKFLAGS) $? /OUT:$@
+WCH_SRC_DIR = src
+WCH_OBJ_DIR = $(BUILD_DIR)\wch
+WCH_OBJS = $(WCH_OBJ_DIR)\engine.$(OBJ_EXT)
 
-$(BUILD_DIR)\lua.lib: $(LUA_OBJS)
-	 $(LIBCMD) $(LIBFLAGS) /OUT:$@ $?
+LUA_SRC_DIR = libs\lua\lua-5.3.4\src
+LUA_OBJ_DIR = $(BUILD_DIR)\lua
 
-{$(LUA_SRC_DIR)}.c{$(LUA_OBJ_DIR)}.obj:
+LUA_OBJS = $(LUA_OBJ_DIR)\lapi.$(OBJ_EXT) \
+	   $(LUA_OBJ_DIR)\lcode.$(OBJ_EXT) \
+	   $(LUA_OBJ_DIR)\lctype.$(OBJ_EXT) \
+	   $(LUA_OBJ_DIR)\ldebug.$(OBJ_EXT) \
+	   $(LUA_OBJ_DIR)\ldo.$(OBJ_EXT) \
+	   $(LUA_OBJ_DIR)\ldump.$(OBJ_EXT) \
+	   $(LUA_OBJ_DIR)\lfunc.$(OBJ_EXT) \
+	   $(LUA_OBJ_DIR)\lgc.$(OBJ_EXT) \
+	   $(LUA_OBJ_DIR)\llex.$(OBJ_EXT) \
+	   $(LUA_OBJ_DIR)\lmem.$(OBJ_EXT) \
+	   $(LUA_OBJ_DIR)\lobject.$(OBJ_EXT) \
+	   $(LUA_OBJ_DIR)\lopcodes.$(OBJ_EXT) \
+	   $(LUA_OBJ_DIR)\lparser.$(OBJ_EXT) \
+	   $(LUA_OBJ_DIR)\lstate.$(OBJ_EXT) \
+	   $(LUA_OBJ_DIR)\lstring.$(OBJ_EXT) \
+	   $(LUA_OBJ_DIR)\ltable.$(OBJ_EXT) \
+	   $(LUA_OBJ_DIR)\ltm.$(OBJ_EXT) \
+	   $(LUA_OBJ_DIR)\lundump.$(OBJ_EXT) \
+	   $(LUA_OBJ_DIR)\lvm.$(OBJ_EXT) \
+	   $(LUA_OBJ_DIR)\lzio.$(OBJ_EXT) \
+	   $(LUA_OBJ_DIR)\lauxlib.$(OBJ_EXT) \
+	   $(LUA_OBJ_DIR)\lbaselib.$(OBJ_EXT) \
+	   $(LUA_OBJ_DIR)\lbitlib.$(OBJ_EXT) \
+	   $(LUA_OBJ_DIR)\lcorolib.$(OBJ_EXT) \
+	   $(LUA_OBJ_DIR)\ldblib.$(OBJ_EXT) \
+	   $(LUA_OBJ_DIR)\liolib.$(OBJ_EXT) \
+	   $(LUA_OBJ_DIR)\lmathlib.$(OBJ_EXT) \
+	   $(LUA_OBJ_DIR)\loslib.$(OBJ_EXT) \
+	   $(LUA_OBJ_DIR)\lstrlib.$(OBJ_EXT) \
+	   $(LUA_OBJ_DIR)\ltablib.$(OBJ_EXT) \
+	   $(LUA_OBJ_DIR)\lutf8lib.$(OBJ_EXT) \
+	   $(LUA_OBJ_DIR)\loadlib.$(OBJ_EXT) \
+	   $(LUA_OBJ_DIR)\linit.$(OBJ_EXT)
+
+
+all: $(BUILD_DIR)\engine.$(EXE_EXT)
+
+$(BUILD_DIR)\engine.$(EXE_EXT): $(LUA_OBJS) $(WCH_OBJS) #$(BUILD_DIR)\lua.$(LIB_EXT)
+	$(LNKCMD) $(LNKFLAGS) $? "$(OUT_PFX)$@"
+
+{$(LUA_SRC_DIR)}.c{$(LUA_OBJ_DIR)}.$(OBJ_EXT):
 	- @ MKDIR $(LUA_OBJ_DIR) > nul 2> nul
-	$(CC) $(CFLAGS) /c /Fo$@ $<
+	$(CC) $(CFLAGS) $(NOLINKFLAG) "$(OUT_PFX2)$@" $<
 
-{$(WCH_SRC_DIR)}.c{$(WCH_OBJ_DIR)}.obj:
+{$(WCH_SRC_DIR)}.c{$(WCH_OBJ_DIR)}.$(OBJ_EXT):
 	- @ MKDIR $(WCH_OBJ_DIR) > nul 2> nul
-	$(CC) $(CFLAGS) /I$(LUA_SRC_DIR) /c /Fo$@ $<
+	$(CC) $(CFLAGS) $(INCLUDE_PFX)$(LUA_SRC_DIR) $(NOLINKFLAG) "$(OUT_PFX2)$@" $<
 
 clean:
-	@ FOR /R $(BUILD_DIR) %X IN (*.obj) DO DEL %X
+	@ FOR /R $(BUILD_DIR) %X IN (*.$(OBJ_EXT)) DO DEL %X
 
