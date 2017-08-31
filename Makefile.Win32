@@ -1,0 +1,78 @@
+#
+# Copyright © Mason McParlane
+#
+
+LIBCMD = lib
+
+LIBFLAGS = /NOLOGO
+
+LNKCMD = link
+
+LNKFLAGS = 
+
+BUILD_DIR = build\
+
+WCH_SRC_DIR = src\
+
+WCH_OBJ_DIR = $(BUILD_DIR)\wch\
+
+WCH_OBJS = $(WCH_OBJ_DIR)\engine.obj
+
+LUA_SRC_DIR = libs\lua\lua-5.3.4\src\
+
+LUA_OBJ_DIR = $(BUILD_DIR)\lua\
+
+LUA_OBJS = $(LUA_OBJ_DIR)\lapi.obj \
+	   $(LUA_OBJ_DIR)\lcode.obj \
+	   $(LUA_OBJ_DIR)\lctype.obj \
+	   $(LUA_OBJ_DIR)\ldebug.obj \
+	   $(LUA_OBJ_DIR)\ldo.obj \
+	   $(LUA_OBJ_DIR)\ldump.obj \
+	   $(LUA_OBJ_DIR)\lfunc.obj \
+	   $(LUA_OBJ_DIR)\lgc.obj \
+	   $(LUA_OBJ_DIR)\llex.obj \
+	   $(LUA_OBJ_DIR)\lmem.obj \
+	   $(LUA_OBJ_DIR)\lobject.obj \
+	   $(LUA_OBJ_DIR)\lopcodes.obj \
+	   $(LUA_OBJ_DIR)\lparser.obj \
+	   $(LUA_OBJ_DIR)\lstate.obj \
+	   $(LUA_OBJ_DIR)\lstring.obj \
+	   $(LUA_OBJ_DIR)\ltable.obj \
+	   $(LUA_OBJ_DIR)\ltm.obj \
+	   $(LUA_OBJ_DIR)\lundump.obj \
+	   $(LUA_OBJ_DIR)\lvm.obj \
+	   $(LUA_OBJ_DIR)\lzio.obj \
+	   $(LUA_OBJ_DIR)\lauxlib.obj \
+	   $(LUA_OBJ_DIR)\lbaselib.obj \
+	   $(LUA_OBJ_DIR)\lbitlib.obj \
+	   $(LUA_OBJ_DIR)\lcorolib.obj \
+	   $(LUA_OBJ_DIR)\ldblib.obj \
+	   $(LUA_OBJ_DIR)\liolib.obj \
+	   $(LUA_OBJ_DIR)\lmathlib.obj \
+	   $(LUA_OBJ_DIR)\loslib.obj \
+	   $(LUA_OBJ_DIR)\lstrlib.obj \
+	   $(LUA_OBJ_DIR)\ltablib.obj \
+	   $(LUA_OBJ_DIR)\lutf8lib.obj \
+	   $(LUA_OBJ_DIR)\loadlib.obj \
+	   $(LUA_OBJ_DIR)\linit.obj
+
+
+all: $(BUILD_DIR)\engine.exe
+
+$(BUILD_DIR)\engine.exe: $(WCH_OBJS) $(BUILD_DIR)\lua.lib
+	$(LNKCMD) $(LNKFLAGS) $? /OUT:$@
+
+$(BUILD_DIR)\lua.lib: $(LUA_OBJS)
+	 $(LIBCMD) $(LIBFLAGS) /OUT:$@ $?
+
+{$(LUA_SRC_DIR)}.c{$(LUA_OBJ_DIR)}.obj:
+	- @ MKDIR $(LUA_OBJ_DIR) > nul 2> nul
+	$(CC) $(CFLAGS) /c /Fo$@ $<
+
+{$(WCH_SRC_DIR)}.c{$(WCH_OBJ_DIR)}.obj:
+	- @ MKDIR $(WCH_OBJ_DIR) > nul 2> nul
+	$(CC) $(CFLAGS) /I$(LUA_SRC_DIR) /c /Fo$@ $<
+
+clean:
+	@ FOR /R $(BUILD_DIR) %X IN (*.obj) DO DEL %X
+
