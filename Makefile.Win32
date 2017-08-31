@@ -6,26 +6,20 @@
 CC = emcc
 CFLAGS = 
 OBJ_EXT = bc
-LIB_EXT = bc
 EXE_EXT = js
 OUT_PFX = "-o "
 OUT_PFX2 = $(OUT_PFX)
 INCLUDE_PFX = -I
-LIBCMD = $(CC)
-LIBFLAGS = $(CFLAGS)
 LNKCMD = $(CC)
 LNKFLAGS = $(CFLAGS)
 
 !ELSE
 CC = cl
 OBJ_EXT = obj
-LIB_EXT = lib
 EXE_EXT = exe
 OUT_PFX = /OUT:
 OUT_PFX2 = /Fo
 INCLUDE_PFX = /I
-LIBCMD = lib
-LIBFLAGS = /NOLOGO
 LNKCMD = link
 LNKFLAGS =
 NOLINKFLAG = /c
@@ -41,7 +35,6 @@ WCH_OBJS = $(WCH_OBJ_DIR)\engine.$(OBJ_EXT)
 
 LUA_SRC_DIR = libs\lua\lua-5.3.4\src
 LUA_OBJ_DIR = $(BUILD_DIR)\lua
-
 LUA_OBJS = $(LUA_OBJ_DIR)\lapi.$(OBJ_EXT) \
 	   $(LUA_OBJ_DIR)\lcode.$(OBJ_EXT) \
 	   $(LUA_OBJ_DIR)\lctype.$(OBJ_EXT) \
