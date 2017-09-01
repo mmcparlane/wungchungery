@@ -1,8 +1,8 @@
-Wungchungery Game Engine
-========================
-
-TODO
-
+Wang Chow's Wungchungery Ninja Magic
+====================================
+* Cross-Platform game engine with emphasis on web-browser support.
+* Raycasted 3d graphics engine based on techniques employed in the '90s.
+* WebSocket-Based network protocol.
 
 Build Steps
 -----------
