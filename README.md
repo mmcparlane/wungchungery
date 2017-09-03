@@ -1,4 +1,4 @@
-Wang Chow's Wungchungery Ninja Magic
+Wungchungery Game Engine
 ====================================
 * Cross-Platform game engine with emphasis on web-browser support.
 * Raycasted 3d graphics engine based on techniques employed in the '90s.
