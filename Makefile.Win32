@@ -76,6 +76,8 @@ LUA_OBJS = $(LUA_OBJ_DIR)\lapi.$(OBJ_EXT) \
 
 all: $(BUILD_DIR)\engine.$(EXE_EXT)
 
+rebuild: clean all
+
 $(BUILD_DIR)\engine.$(EXE_EXT): $(LUA_OBJS) $(WCH_OBJS) #$(BUILD_DIR)\lua.$(LIB_EXT)
 	$(LNKCMD) $(LNKFLAGS) $? "$(OUT_PFX)$@"
 
