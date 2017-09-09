@@ -19,7 +19,7 @@
 
 static lua_State* engine_init();
 static void engine_loop(lua_State* L);
-static int engine_tick(lua_State* L);
+static int engine_update(lua_State* L);
 static double engine_clock_now();
 
 // TODO
