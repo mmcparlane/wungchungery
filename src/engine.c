@@ -19,8 +19,7 @@
 
 #define ENGINE_UPDATE_INTERVAL 50
 
-static int engine_init(lua_State* L);
-static int engine_loop(lua_State* L);
+static int engine_run(lua_State* L);
 static int engine_update(lua_State* L);
 static int engine_clock_now(lua_State* L);
 
@@ -66,27 +65,28 @@ static int engine_clock_now(lua_State* L) {
 
 static void engine_em_update(void* data){
 	lua_State* L = (lua_State*)(data);
-	printf("engine_em_update: top: '%i'\n", lua_gettop(L));
-	//lua_pushcfunction(L, engine_update);
+
+	// Fetch update function and call it.
+	lua_getglobal(L, "engine");
+	lua_pushstring(L, "update");
+	lua_gettable(L, -2);
 	lua_call(L, 0, 0);
 }
 
-static int engine_loop(lua_State* L) {
-	printf("engine_loop: top: '%i'\n", lua_gettop(L));
+static int engine_run(lua_State* L) {
 	emscripten_set_main_loop_arg(engine_em_update, L, 0, 0);
 	return 0;
 }
 
 
 #else
-static int engine_loop(lua_State* L) {
+static int engine_run(lua_State* L) {
 	// TODO
 	//   Implement native game-loop.
 	return 0;
 }
 
 #endif
-
 
 
 static int engine_update(lua_State* L) {
@@ -122,6 +122,8 @@ static int engine_update(lua_State* L) {
 	}
 	*/
 
+	// Update closure variables for next
+	// iteration.
 	lua_pushnumber(L, lag);
 	lua_copy(L, -1, lua_upvalueindex(1));
 	lua_pushnumber(L, now);
@@ -130,23 +132,33 @@ static int engine_update(lua_State* L) {
 	return 0;
 }
 
-static int engine_init(lua_State* L) {
-	printf("d\n");
-	lua_pushnumber(L, 50.0);
+static const luaL_Reg engine_lib[] = {
+	{"clock_now", engine_clock_now},
+	{"run", engine_run},
+	{NULL, NULL},
+};
+
+int main (int argc, char* argv[]) {
+	// Add standard lib and engine lib while
+	// leaving engine lib on stack so more
+	// entries can be added as necessary.
+	lua_State* L = luaL_newstate();
+	luaL_openlibs(L);
+	luaL_newlib(L, engine_lib);
+
+	// Create new update closure and add it
+	// to the engine lib.
+	lua_pushstring(L, "update");
+	lua_pushnumber(L, 0.0);
 	lua_pushcfunction(L, engine_clock_now);
 	lua_call(L, 0, 1);
 	lua_pushcclosure(L, engine_update, 2);
+	lua_settable(L, -3);
 
-	return 1;
-}
+	// Make the engine lib globally accessible.
+	lua_setglobal(L, "engine");
 
-
-int main (int argc, char* argv[]) {
-	lua_State* L = luaL_newstate();
-	luaL_openlibs(L);
-	lua_pushcfunction(L, engine_loop);
-	lua_pushcfunction(L, engine_init);
-	lua_call(L, 0, 1);
-	lua_call(L, 1, 0);
-	printf("c\n");
+	// Run the simulation.
+	lua_pushcfunction(L, engine_run);
+	lua_call(L, 0, 0);
 }
