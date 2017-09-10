@@ -1,11 +1,8 @@
 //
 // Copyright © Mason McParlane
 //
-// For now this implements an asynchronous REPL loop which
-// allows web-based access to the Lua interpreter. Eventually
-// SDL support will be added to Lua along with HTML5/CSS widgets
-// as the basis for a browser-based game-engine IDE.
 
+#include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
 #include <stdbool.h>
@@ -22,32 +19,6 @@
 static int engine_run(lua_State* L);
 static int engine_update(lua_State* L);
 static int engine_clock_now(lua_State* L);
-
-// TODO
-//   Add a Lua event-queue data structure which allows Lua
-//   code (game-logic-triggered), C code (signals, etc.), and
-//   JavaScript(HTML/CSS UI interaction) to trigger events on
-//   the runtime system.
-//
-//   Some of these events will be common to both native
-//   and Emscripten implementations--for instance: stop,
-//   pause, resume, etc. Others will be specific to a
-//   particular implementation.
-//
-//   Some events get consumed by the main loop while others
-//   get consumed by in other places. Hence, the main loop
-//   will be responsible for processing the event queue before
-//   propagating events to registered handlers.
-//
-//   Event processing goes something like:
-//      - Outside event occurs and gets
-//        converted/placed on Lua stack.
-//      - Game loop reads event from stack
-//        and handles the event if necessary.
-//      - Depending on the event, any reg-
-//        istered event-handlers get called.
-//      - The game loop then proceeds to
-//        call the AI, Update, etc.
 
 
 #if defined(__EMSCRIPTEN__)
@@ -80,9 +51,15 @@ static int engine_run(lua_State* L) {
 
 
 #else
+static int engine_clock_now(lua_State* L) {
+	// Not implemented.
+	exit(EXIT_FAILURE);
+	return 0;
+}
+
 static int engine_run(lua_State* L) {
-	// TODO
-	//   Implement native game-loop.
+	// Not implemented.
+	exit(EXIT_FAILURE);
 	return 0;
 }
 
@@ -103,6 +80,13 @@ static int engine_update(lua_State* L) {
 	printf("lag: '%f', before: '%f', now: '%f', gap: '%f'\n",
 	       lag, before, now, gap);
 
+	// Three event queues exist: one for input events,
+	// another for update events, last for render events.
+	// When event-handlers get registered or when events
+	// are fired they get enqueued on the appropriate
+	// event handler based on the event ID. Each event
+	// has a prepopulated type containing all data asso-
+	// ciated with that event.
 	// input();
 
 	while (lag >= ENGINE_UPDATE_INTERVAL) {
