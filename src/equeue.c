@@ -32,17 +32,14 @@
 static int equeue_new(lua_State* L) {
 	lua_newtable(L);
 	{
-		lua_pushstring(L, "handlers");
 		lua_newtable(L);
-		lua_settable(L, -3);
+		lua_setfield(L, -2, "handlers");
 	
-		lua_pushstring(L, "first");
 		lua_pushinteger(L, 0);
-		lua_settable(L, -3);
+		lua_setfield(L, -2, "first");
 	
-		lua_pushstring(L, "last");
 		lua_pushinteger(L, -1);
-		lua_settable(L, -3);
+		lua_setfield(L, -2, "last");
 	}
 	
 	return 1;
@@ -52,34 +49,30 @@ static int equeue_is_empty(lua_State* L) {
 }
 
 static int equeue_add_handler(lua_State* L) {
-	if (! lua_istable(L, 1)) {
-		luaL_error(
-			L,
-			"bad argument #1 to 'equeue_add_handler'"
-			"(table expected, got %s)",
-			lua_typename(L, lua_type(L, 1)));
-	}
-	lua_Integer id = luaL_checkinteger(L, 2);
-	if (! lua_isfunction(L, 3)) {
-		return luaL_error(
-			L,
-			"bad argument #3 to 'equeue_add_handler'"
-			"(function expected, got %s)",
-			lua_typename(L, lua_type(L, 3)));
-	}
+	luaL_checktype(L, 1, LUA_TTABLE);
+	lua_Integer eventid = luaL_checkinteger(L, 2);
+	luaL_checktype(L, 3, LUA_TFUNCTION);
 
-	luaL_getsubtable(L, "handlers");
-	{
-		lua_pushinteger(L, id);
-		
-		switch(lua_gettable(L, -2)) {	
-		case LUA_TTABLE:
+	if (lua_getfield(L, 1, "handlers") == LUA_TTABLE) {
+		switch(lua_geti(L, -1, eventid)) {
+		case LUA_TNIL:
+			// x = {}
+			// x[#x+1] = hfunc
+			// self.handlers[eventid] = x
+			lua_pop(L, 1);
+			lua_newtable(L);
+			{
+				lua_pushvalue(L, 3);
+				lua_rawseti(L, -2, (lua_rawlen(L, -2) + 1));
+			}
+			lua_rawseti(L, -2, eventid);
 			break;
 			
-		case LUA_TNIL:
-			lua_pushinteger(L, id);
-			lua_newtable(L);
-			lua_settable(L, -3);
+		case LUA_TTABLE:
+			// x = self.handlers[eventid]
+			// x[#x+1] = hfunc
+			lua_pushvalue(L, 3);
+			lua_rawseti(L, -2, (lua_rawlen(L, -2) + 1));			
 			break;
 			
 		default:
@@ -91,7 +84,13 @@ static int equeue_add_handler(lua_State* L) {
 				id, lua_typename(L, lua_type(L, -1)));
 		}
 
+		return 0;
 		
+	} else {
+		return luaL_error(
+			L,
+			"'handlers' field does not exist. Was equeue.new used "
+			"to create the equeue type?");
 	}
 }
 
