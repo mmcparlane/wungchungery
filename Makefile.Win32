@@ -39,7 +39,8 @@ TEST_OBJS = $(TEST_OBJ_DIR)\test.$(OBJ_EXT)
 
 WCH_SRC_DIR = src
 WCH_OBJ_DIR = $(BUILD_DIR)\wch
-WCH_OBJS = $(WCH_OBJ_DIR)\engine.$(OBJ_EXT) \
+WCH_OBJS = $(WCH_OBJ_DIR)\wch_args.$(OBJ_EXT) \
+	   $(WCH_OBJ_DIR)\engine.$(OBJ_EXT) \
 	   $(WCH_OBJ_DIR)\equeue.$(OBJ_EXT)
 
 LUA_SRC_DIR = libs\lua\lua-5.3.4\src
@@ -103,7 +104,7 @@ $(BUILD_DIR)\test.$(EXE_EXT): $(LUA_OBJS) $(WCH_OBJS) $(TEST_OBJS) $(TEST_OBJ_DI
 
 {$(TEST_SRC_DIR)}.c{$(TEST_OBJ_DIR)}.$(OBJ_EXT):
 	- @ MKDIR $(TEST_OBJ_DIR) > nul 2> nul
-	$(CC) $(CFLAGS) $(INCLUDE_PFX)$(LUA_SRC_DIR) $(NOLINKFLAG) "$(OUT_PFX2)$@" $<
+	$(CC) $(CFLAGS) $(INCLUDE_PFX)$(LUA_SRC_DIR) $(INCLUDE_PFX)$(WCH_SRC_DIR) $(NOLINKFLAG) "$(OUT_PFX2)$@" $<
 
 clean:
 	@ FOR /R $(BUILD_DIR) %X IN (*.$(OBJ_EXT)) DO DEL %X

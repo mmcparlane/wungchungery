@@ -4,9 +4,10 @@
 
 #include "lua.h"
 #include "lauxlib.h"
+#include "wch_args.h"
 
 #define ERROR_MISSING_ARG(L, ARG) \
-	return luaL_error(L, "Required argument '%s' is missing", ARG ## .name);
+	return luaL_error(L, "Required argument '%s' is missing", ARG->name);
 
 #define ERROR_INVALID_ARG(L, ARGV, I) \
 	return luaL_error(L, "Invalid argument '%s' specified for '%s'", ARGV[I], ARGV[I-1]);
@@ -31,9 +32,12 @@ int wch_parse_args(lua_State* L,
 	const int ISTRING = lua_gettop(L);
 	
 	int i, j;
+	const wch_Arg* a;
 	for (i = 0; i < argc; ++i) {
 		j = 0;
-		while ((const wch_Arg* a = args[j++]).name) {
+		while ((a = &expected[j++])) {
+			if (a->name == NULL) break;
+			
 			lua_getfield(L, ISTRING, "match");
 			{
 				lua_pushstring(L, a->flags);
@@ -60,26 +64,27 @@ int wch_parse_args(lua_State* L,
 					}
 					break;
 				}
-				lua_setfield(L, IRETURN, a.name);
+				lua_setfield(L, IRETURN, a->name);
 			}
 			// function match
-			lua_pop(L);
+			lua_pop(L, 1);
 		}
 	}
 	// table string
-	lua_pop(L);
+	lua_pop(L, 1);
 
 	// Check for missing arguments
 	for (i = 0; i < argc; ++i) {
 		j = 0;
-		while ((const wch_Arg* a = args[j++]).name) {
-			if (a.mandatory) {
-				lua_getfield(L, IRETURN, a.name);
+		while ((a = &expected[j++])) {
+			if (a->name == NULL) break;
+			if (a->mandatory) {
+				lua_getfield(L, IRETURN, a->name);
 				if (lua_isnil(L, -1)) {
 					ERROR_MISSING_ARG(L, a)
 				}
-				// field a.name
-				lua_pop(L);
+				// field a->name
+				lua_pop(L, 1);
 			}
 		}
 	}
