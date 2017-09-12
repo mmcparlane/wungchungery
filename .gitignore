@@ -1,4 +1,7 @@
-# Build folder.
+# Backup files
+*~
+
+# Build folder
 build/**
 
 # Prerequisites
