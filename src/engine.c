@@ -122,7 +122,7 @@ static const luaL_Reg engine_lib[] = {
 	{NULL, NULL},
 };
 
-int main (int argc, char* argv[]) {
+int engine_start(int argc, char* argv[]) {
 	// Add standard lib and engine lib while
 	// leaving engine lib on stack so more
 	// entries can be added as necessary.
@@ -145,4 +145,6 @@ int main (int argc, char* argv[]) {
 	// Run the simulation.
 	lua_pushcfunction(L, engine_run);
 	lua_call(L, 0, 0);
+
+	return 0;
 }

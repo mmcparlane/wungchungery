@@ -33,9 +33,14 @@ NOLINKFLAG = /c
 
 BUILD_DIR = build
 
+TEST_SRC_DIR = test
+TEST_OBJ_DIR = $(BUILD_DIR)\test
+TEST_OBJS = $(TEST_OBJ_DIR)\test.$(OBJ_EXT)
+
 WCH_SRC_DIR = src
 WCH_OBJ_DIR = $(BUILD_DIR)\wch
-WCH_OBJS = $(WCH_OBJ_DIR)\engine.$(OBJ_EXT)
+WCH_OBJS = $(WCH_OBJ_DIR)\engine.$(OBJ_EXT) \
+	   $(WCH_OBJ_DIR)\equeue.$(OBJ_EXT)
 
 LUA_SRC_DIR = libs\lua\lua-5.3.4\src
 LUA_OBJ_DIR = $(BUILD_DIR)\lua
@@ -74,11 +79,18 @@ LUA_OBJS = $(LUA_OBJ_DIR)\lapi.$(OBJ_EXT) \
 	   $(LUA_OBJ_DIR)\linit.$(OBJ_EXT)
 
 
-all: $(BUILD_DIR)\engine.$(EXE_EXT)
+all: engine test
+
+engine: $(BUILD_DIR)\engine.$(EXE_EXT)
+
+test: $(BUILD_DIR)\test.$(EXE_EXT)
 
 rebuild: clean all
 
-$(BUILD_DIR)\engine.$(EXE_EXT): $(LUA_OBJS) $(WCH_OBJS) #$(BUILD_DIR)\lua.$(LIB_EXT)
+$(BUILD_DIR)\engine.$(EXE_EXT): $(LUA_OBJS) $(WCH_OBJS) $(WCH_OBJ_DIR)\main.$(OBJ_EXT)
+	$(LNKCMD) $(LNKFLAGS) $? "$(OUT_PFX)$@"
+
+$(BUILD_DIR)\test.$(EXE_EXT): $(LUA_OBJS) $(WCH_OBJS) $(TEST_OBJS) $(TEST_OBJ_DIR)\main.$(OBJ_EXT)
 	$(LNKCMD) $(LNKFLAGS) $? "$(OUT_PFX)$@"
 
 {$(LUA_SRC_DIR)}.c{$(LUA_OBJ_DIR)}.$(OBJ_EXT):
@@ -87,6 +99,10 @@ $(BUILD_DIR)\engine.$(EXE_EXT): $(LUA_OBJS) $(WCH_OBJS) #$(BUILD_DIR)\lua.$(LIB_
 
 {$(WCH_SRC_DIR)}.c{$(WCH_OBJ_DIR)}.$(OBJ_EXT):
 	- @ MKDIR $(WCH_OBJ_DIR) > nul 2> nul
+	$(CC) $(CFLAGS) $(INCLUDE_PFX)$(LUA_SRC_DIR) $(NOLINKFLAG) "$(OUT_PFX2)$@" $<
+
+{$(TEST_SRC_DIR)}.c{$(TEST_OBJ_DIR)}.$(OBJ_EXT):
+	- @ MKDIR $(TEST_OBJ_DIR) > nul 2> nul
 	$(CC) $(CFLAGS) $(INCLUDE_PFX)$(LUA_SRC_DIR) $(NOLINKFLAG) "$(OUT_PFX2)$@" $<
 
 clean:

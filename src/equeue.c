@@ -46,6 +46,7 @@ static int equeue_new(lua_State* L) {
 }
 
 static int equeue_is_empty(lua_State* L) { 
+	return 0;
 }
 
 static int equeue_add_handler(lua_State* L) {
@@ -81,7 +82,7 @@ static int equeue_add_handler(lua_State* L) {
 				"Event ID '%i' maps to invalid type '%s'. "
 				"Table expected (so multiple event handlers "
 				"can handle a single event).",
-				id, lua_typename(L, lua_type(L, -1)));
+				eventid, lua_typename(L, lua_type(L, -1)));
 		}
 
 		return 0;
@@ -95,12 +96,15 @@ static int equeue_add_handler(lua_State* L) {
 }
 
 static int equeue_del_handler(lua_State* L) {
+	return 0;
 }
 
 static int equeue_process(lua_State* L) {
+	return 0;
 }
 
 static int equeue_receive(lua_State* L) {
+	return 0;
 }
 
 
