@@ -4,7 +4,7 @@
 
 #include "lua.h"
 #include "lauxlib.h"
-#include "wch_args.h"
+#include "args.h"
 
 #define ERROR_MISSING_ARG(L, ARG) \
 	return luaL_error(L, "Required argument '%s' is missing", ARG->name);
