@@ -6,18 +6,21 @@
 #include "lauxlib.h"
 #include "args.h"
 
-#define ERROR_MISSING_ARG(L, ARG) \
-	return luaL_error(L, "Required argument '%s' is missing", ARG->name);
+#define ERROR_MISSING_FLAG(L, ARG) \
+	lua_pushfstring(L, "Required argument '%s' is missing", ARG->name); \
+	return WCH_ARGS_MISSING_FLAG;
 
-#define ERROR_INVALID_ARG(L, ARGV, I) \
-	return luaL_error(L, "Invalid argument '%s' specified for '%s'", ARGV[I], ARGV[I-1]);
+#define ERROR_BAD_FORMAT(L, ARGV, I) \
+	lua_pushfstring(L, "Invalid argument '%s' specified for '%s'", ARGV[I], ARGV[I-1]); \
+	return WCH_ARGS_BAD_FORMAT;
 
 #define ERROR_MISSING_VALUE(L, ARGV, I) \
-	return luaL_error(L, "No value specified for '%s'", ARGV[I-1]);
+	lua_pushfstring(L, "No value specified for '%s'", ARGV[I-1]); \
+	return WCH_ARGS_MISSING_VALUE;
 
-#define CHECK_INVALID_ARG(L, ARGV, I) \
+#define CHECK_INVALID_VALUE(L, ARGV, I) \
 	if (lua_isnil(L, -1)) {	\
-		ERROR_INVALID_ARG(L, ARGV, I); \
+		ERROR_BAD_FORMAT(L, ARGV, I); \
 	}
 
 int wch_parse_args(lua_State* L,
@@ -42,7 +45,8 @@ int wch_parse_args(lua_State* L,
 			{
 				lua_pushstring(L, a->flags);
 				lua_pushstring(L, argv[i]);
-				lua_call(L, 2, 1);
+				if (lua_pcall(L, 2, 1, 0))
+					return WCH_ARGS_LUA_ERR;
 			}
 
 			if(! lua_isnil(L, -1)) {
@@ -55,9 +59,10 @@ int wch_parse_args(lua_State* L,
 					if (++i < argc) {
 					        lua_getglobal(L, "tonumber");
 						lua_pushstring(L, argv[i]);
-						lua_call(L, 1, 1);
+						if (lua_pcall(L, 1, 1, 0))
+							return WCH_ARGS_LUA_ERR;
 						
-						CHECK_INVALID_ARG(L, argv, i)
+						CHECK_INVALID_VALUE(L, argv, i)
 						
 					} else {
 						ERROR_MISSING_VALUE(L, argv, i)
@@ -81,7 +86,7 @@ int wch_parse_args(lua_State* L,
 			if (a->mandatory) {
 				lua_getfield(L, IRETURN, a->name);
 				if (lua_isnil(L, -1)) {
-					ERROR_MISSING_ARG(L, a)
+					ERROR_MISSING_FLAG(L, a)
 				}
 				// field a->name
 				lua_pop(L, 1);
@@ -89,5 +94,5 @@ int wch_parse_args(lua_State* L,
 		}
 	}
 
-	return 1;
+	return WCH_ARGS_OK;
 }

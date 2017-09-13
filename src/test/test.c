@@ -36,21 +36,28 @@ int test_start(int argc, const char* argv[]) {
 	luaL_newlib(L, test_lib);
 	lua_setglobal(L, "test");
 
-	wch_parse_args(L, argc, argv, args);
-	luaL_checktype(L, -1, LUA_TTABLE);
-	const int IARGT = lua_gettop(L);
-
-	lua_pushnil(L);
-	const int ITMP = lua_gettop(L);
-	
-	lua_pushnil(L);
-	while (lua_next(L, IARGT) != 0) {
-		lua_copy(L, -2, ITMP);
+	int err = wch_parse_args(L, argc, argv, args);
+	if (err) {
 		lua_getglobal(L, "print");
-		lua_rotate(L, -3, 1);
-		lua_call(L, 2, 0);
-		lua_pushvalue(L, ITMP);
-	}
+		lua_rotate(L, -2, 1);
+		lua_pcall(L, 1, 0, 0);
+		return 1;
+		
+	} else {
+		luaL_checktype(L, -1, LUA_TTABLE);
+		const int IARGT = lua_gettop(L);
+
+		lua_pushnil(L);
+		const int ITMP = lua_gettop(L);
 	
+		lua_pushnil(L);
+		while (lua_next(L, IARGT) != 0) {
+			lua_copy(L, -2, ITMP);
+			lua_getglobal(L, "print");
+			lua_rotate(L, -3, 1);
+			lua_call(L, 2, 0);
+			lua_pushvalue(L, ITMP);
+		}
+	}
 	return 0;
 }
