@@ -2,10 +2,7 @@
 // Copyright © Mason McParlane
 //
 
-#include <stdio.h>
-#include <stdlib.h>
 #include <string.h>
-
 #include "lua.h"
 #include "lauxlib.h"
 #include "args.h"
@@ -46,7 +43,6 @@ static int contains_flag(lua_State* L) {
 	lua_call(L, 0, 1);
 	
 	if (lua_isstring(L, -1)) {
-		printf("Comparing '%s' to '%s'\n", lua_tostring(L, -1), arg);
 		if (strcmp(arg, lua_tostring(L, -1)) != 0) {
 			lua_pop(L, 1);
 			goto NEXT_FLAG;
@@ -60,7 +56,7 @@ static int contains_flag(lua_State* L) {
 	return 1;
 }
 
-#define IRETURN 1
+#define IRESULT 1
 int wch_parse_args(lua_State* L,
 		   int argc,
 		   const char* argv[],
@@ -82,30 +78,24 @@ int wch_parse_args(lua_State* L,
 			lua_call(L, 2, 1);
 			
 			if (lua_toboolean(L, -1)) {
-				lua_pop(L, 1); // Contains_flag result
+				lua_pop(L, 1); // Boolean
 				
 				switch (expected[i].type) {
 				case LUA_TBOOLEAN:
-					printf("boolean\n");
 					lua_pushboolean(L, 1);
 					break;
 					
 				case LUA_TNUMBER:
-					printf("number\n");
-					//lua_pop(L, 1); // Arg
-					//printf("top: %i type: %s\n", lua_gettop(L), lua_typename(L, lua_type(L, -1)));
 					lua_getglobal(L, "tonumber");
 					lua_pushvalue(L, -3); // Value
 					
 					if (lua_isnil(L, -1)) {
-						lua_pop(L, 2); // Tonumber, Nil
+						lua_pop(L, 2); // Function, Nil
 
 						ERROR_MISSING_VALUE(L, lua_tostring(L, -1)); // Flag
 
 					} else {
-						//printf("top: %i type: %s val: %s\n", lua_gettop(L), lua_typename(L, lua_type(L, -1)), lua_tostring(L, -1));
 						lua_call(L, 1, 1);
-						printf("top: %i type: %s\n", lua_gettop(L), lua_typename(L, lua_type(L, -1)));
 
 						if (lua_isnil(L, -1)) {
 							lua_pop(L, 1); // Nil
@@ -118,17 +108,16 @@ int wch_parse_args(lua_State* L,
 
 						lua_remove(L, -2); // Value (prepare for next flag)
 
-						printf("top: %i type: %s\n", lua_gettop(L), lua_typename(L, lua_type(L, -1)));
 						// Number on top
 					}
 					break; // Switch
 				}
 				
-				lua_setfield(L, IRETURN, expected[i].name);
+				lua_setfield(L, IRESULT, expected[i].name);
 				break; // For
 				
 			} else {
-				lua_pop(L, 1); // Contains_flag result
+				lua_pop(L, 1); // Boolean
 				continue; // For
 			}
 		}
@@ -138,8 +127,6 @@ int wch_parse_args(lua_State* L,
 	} while (! lua_isnil(L, -1));
 
 	lua_pop(L, 1); // Sentinel
-
-	printf("top: %i type: %s\n", lua_gettop(L), lua_typename(L, lua_type(L, -1)));
 
 	return WCH_ARGS_OK;
 }
