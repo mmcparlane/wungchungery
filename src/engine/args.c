@@ -8,22 +8,28 @@
 #include "args.h"
 
 #define ERROR_MISSING_FLAG(L, ARG) do {	\
-		lua_pushfstring(L, "Required argument '%s' is missing.", (ARG).name); \
+		lua_pushfstring(L, "Required parameter '%s' is missing.", (ARG).name); \
 		lua_replace(L, 1); lua_settop(L, 1); \
 		return WCH_ARGS_MISSING_FLAG; \
 	} while(0)
+
+#define ERROR_MISSING_VALUE(L, FLAG) do { \
+		lua_pushfstring(L, "No value specified for '%s'.", (FLAG)); \
+		lua_replace(L, 1); lua_settop(L, 1); \
+		return WCH_ARGS_MISSING_VALUE; \
+	} while (0)
+
+#define ERROR_UNSUPPORTED_FLAG(L, FLAG) do { \
+		lua_pushfstring(L, "Parameter '%s' is not supported.", (FLAG)); \
+		lua_replace(L, 1); lua_settop(L, 1); \
+		return WCH_ARGS_UNSUPPORTED_FLAG; \
+	} while (0)
 
 #define ERROR_BAD_FORMAT(L, FLAG, VALUE, TEXPECTED) do { \
 		lua_pushfstring(L, "Invalid value '%s' specified for '%s'; expected '%s'.", \
 				(VALUE), (FLAG), lua_typename((L), (TEXPECTED))); \
 		lua_replace(L, 1); lua_settop(L, 1); \
 		return WCH_ARGS_BAD_FORMAT; \
-	} while (0)
-
-#define ERROR_MISSING_VALUE(L, FLAG) do { \
-		lua_pushfstring(L, "No value specified for '%s'.", (FLAG)); \
-		lua_replace(L, 1); lua_settop(L, 1); \
-		return WCH_ARGS_MISSING_VALUE; \
 	} while (0)
 
 
@@ -64,7 +70,8 @@ int wch_parse_args(lua_State* L,
 		   int argc,
 		   const char* argv[],
 		   const wch_Arg expected[]) {
-	int i;
+
+	int i = 0, unsupported = 1;
 	lua_newtable(L);
 	
 	if (argc < 2) return WCH_ARGS_OK;
@@ -117,6 +124,7 @@ int wch_parse_args(lua_State* L,
 				}
 				
 				lua_setfield(L, IRESULT, expected[i].name);
+				unsupported = 0;
 				break; // For
 				
 			} else {
@@ -124,8 +132,13 @@ int wch_parse_args(lua_State* L,
 				continue; // For
 			}
 		}
-		
-		lua_pop(L, 1); // Argument (or Value if there was one)
+
+		if (unsupported) {
+			ERROR_UNSUPPORTED_FLAG(L, lua_tostring(L, -1));
+			
+		} else {
+			lua_pop(L, 1); // Argument (or Value if there was one)
+		}
 		
 	} while (! lua_isnil(L, -1));
 
