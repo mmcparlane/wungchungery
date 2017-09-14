@@ -37,6 +37,7 @@ int test_start(int argc, const char* argv[]) {
 	lua_setglobal(L, "test");
 
 	int err = wch_parse_args(L, argc, argv, args);
+	printf("top: %i type: %s\n", lua_gettop(L), lua_typename(L, lua_type(L, -1)));
 	if (err) {
 		lua_getglobal(L, "print");
 		lua_rotate(L, -2, 1);
@@ -44,6 +45,9 @@ int test_start(int argc, const char* argv[]) {
 		return 1;
 		
 	} else {
+		//lua_getfield(L, -1, "help");
+		//printf("%i\n", lua_toboolean(L, -1));
+		
 		luaL_checktype(L, -1, LUA_TTABLE);
 		const int IARGT = lua_gettop(L);
 
@@ -58,6 +62,7 @@ int test_start(int argc, const char* argv[]) {
 			lua_call(L, 2, 0);
 			lua_pushvalue(L, ITMP);
 		}
+		
 	}
 	return 0;
 }
