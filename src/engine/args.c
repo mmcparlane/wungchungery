@@ -8,18 +8,21 @@
 #include "args.h"
 
 #define ERROR_MISSING_FLAG(L, ARG) do {	\
-		lua_pushfstring(L, "Required argument '%s' is missing", (ARG).name); \
+		lua_pushfstring(L, "Required argument '%s' is missing.", (ARG).name); \
+		lua_replace(L, 1); lua_settop(L, 1); \
 		return WCH_ARGS_MISSING_FLAG; \
 	} while(0)
 
 #define ERROR_BAD_FORMAT(L, FLAG, VALUE, TEXPECTED) do { \
-		lua_pushfstring(L, "Invalid value '%s' specified for '%s'; expected '%s'", \
+		lua_pushfstring(L, "Invalid value '%s' specified for '%s'; expected '%s'.", \
 				(VALUE), (FLAG), lua_typename((L), (TEXPECTED))); \
+		lua_replace(L, 1); lua_settop(L, 1); \
 		return WCH_ARGS_BAD_FORMAT; \
 	} while (0)
 
 #define ERROR_MISSING_VALUE(L, FLAG) do { \
-		lua_pushfstring(L, "No value specified for '%s'", (FLAG)); \
+		lua_pushfstring(L, "No value specified for '%s'.", (FLAG)); \
+		lua_replace(L, 1); lua_settop(L, 1); \
 		return WCH_ARGS_MISSING_VALUE; \
 	} while (0)
 
