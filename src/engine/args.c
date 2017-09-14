@@ -10,49 +10,22 @@
 #include "lauxlib.h"
 #include "args.h"
 
-#define ERROR_MISSING_FLAG(L, ARG) \
-	lua_pushfstring(L, "Required argument '%s' is missing", ARG->name); \
-	return WCH_ARGS_MISSING_FLAG;
+#define ERROR_MISSING_FLAG(L, ARG) do {	\
+		lua_pushfstring(L, "Required argument '%s' is missing", (ARG).name); \
+		return WCH_ARGS_MISSING_FLAG; \
+	} while(0)
 
-#define ERROR_BAD_FORMAT(L, ARGV, I) \
-	lua_pushfstring(L, "Invalid argument '%s' specified for '%s'", ARGV[I], ARGV[I-1]); \
-	return WCH_ARGS_BAD_FORMAT;
+#define ERROR_BAD_FORMAT(L, FLAG, VALUE, TEXPECTED) do { \
+		lua_pushfstring(L, "Invalid value '%s' specified for '%s'; expected '%s'", \
+				(VALUE), (FLAG), lua_typename((L), (TEXPECTED))); \
+		return WCH_ARGS_BAD_FORMAT; \
+	} while (0)
 
-#define ERROR_MISSING_VALUE(L, ARGV, I) \
-	lua_pushfstring(L, "No value specified for '%s'", ARGV[I-1]); \
-	return WCH_ARGS_MISSING_VALUE;
+#define ERROR_MISSING_VALUE(L, FLAG) do { \
+		lua_pushfstring(L, "No value specified for '%s'", (FLAG)); \
+		return WCH_ARGS_MISSING_VALUE; \
+	} while (0)
 
-#define CHECK_INVALID_VALUE(L, ARGV, I) \
-	if (lua_isnil(L, -1)) {	\
-		ERROR_BAD_FORMAT(L, ARGV, I) \
-	}
-
-
-#define IVALUE 1
-#define ITYPE 2
-static int flag_value(lua_State* L) {
-	switch (lua_type(L, -1)) {
-	case LUA_TBOOLEAN:
-		printf("boolean\n");
-		lua_pushboolean(L, 1);
-		break;
-					
-	case LUA_TNUMBER:
-		printf("number\n");
-		if (++i < argc) {
-			lua_getglobal(L, "tonumber");
-			lua_pushstring(L, argv[i]);
-			lua_call(L, 1, 1);
-			
-			CHECK_INVALID_VALUE(L, argv, i)
-				
-				} else {
-			ERROR_MISSING_VALUE(L, argv, i)
-				}
-		break;
-	}
-	return 1;
-}
 
 #define IARG 1
 #define IFLAGS 2
@@ -92,58 +65,81 @@ int wch_parse_args(lua_State* L,
 		   int argc,
 		   const char* argv[],
 		   const wch_Arg expected[]) {
-
+	int i;
 	lua_newtable(L);
 	
-	int i, j, match;
-	const wch_Arg* a;
-	for (i = 0; i < argc; ++i) {
-		j = 0;
-		while ((a = &expected[j++])) {
-			if (a->name == NULL) break;
-			
-			lua_pushcfunction(L, contains_flag);
-			lua_pushstring(L, argv[i]);
-			lua_pushstring(L, a->flags);
-			lua_call(L, 2, 1);
-
-			match = lua_toboolean(L, -1);
-			if (match) {
-				
-				lua_setfield(L, IRETURN, a->name);
-
-				// arg value, boolean
-				lua_pop(L, 2);
-				printf("top: %i type: %s\n", lua_gettop(L), lua_typename(L, lua_type(L, -1)));
-				break;
-			}
-
-			// boolean
-			printf("top: %i type: %s\n", lua_gettop(L), lua_typename(L, lua_type(L, -1)));
-			lua_pop(L, 1);
-		}
-	}
-	printf("top: %i type: %s\n", lua_gettop(L), lua_typename(L, lua_type(L, -1)));
-
-	// Check for missing arguments
-	for (i = 0; i < argc; ++i) {
-		j = 0;
-		while ((a = &expected[j++])) {
-			if (a->name == NULL) break;
-			if (a->mandatory) {
-				lua_getfield(L, IRETURN, a->name);
-				if (lua_isnil(L, -1)) {
-					ERROR_MISSING_FLAG(L, a)
-				}
-				// field a->name
-				lua_pop(L, 1);
-			}
-		}
-	}
+	if (argc < 2) return WCH_ARGS_OK;
 	
-	// ISTRING
-	//lua_pop(L, 1);
+	lua_pushnil(L); // Sentinel
+	for (i = argc-1; i > 0; --i)
+		lua_pushstring(L, argv[i]);
+
+	do {
+		for (i = 0; expected[i].name != NULL; ++i) {
+			lua_pushcfunction(L, contains_flag);
+			lua_pushvalue(L, -2);
+			lua_pushstring(L, expected[i].flags);
+			lua_call(L, 2, 1);
+			
+			if (lua_toboolean(L, -1)) {
+				lua_pop(L, 1); // Contains_flag result
+				
+				switch (expected[i].type) {
+				case LUA_TBOOLEAN:
+					printf("boolean\n");
+					lua_pushboolean(L, 1);
+					break;
+					
+				case LUA_TNUMBER:
+					printf("number\n");
+					//lua_pop(L, 1); // Arg
+					//printf("top: %i type: %s\n", lua_gettop(L), lua_typename(L, lua_type(L, -1)));
+					lua_getglobal(L, "tonumber");
+					lua_pushvalue(L, -3); // Value
+					
+					if (lua_isnil(L, -1)) {
+						lua_pop(L, 2); // Tonumber, Nil
+
+						ERROR_MISSING_VALUE(L, lua_tostring(L, -1)); // Flag
+
+					} else {
+						//printf("top: %i type: %s val: %s\n", lua_gettop(L), lua_typename(L, lua_type(L, -1)), lua_tostring(L, -1));
+						lua_call(L, 1, 1);
+						printf("top: %i type: %s\n", lua_gettop(L), lua_typename(L, lua_type(L, -1)));
+
+						if (lua_isnil(L, -1)) {
+							lua_pop(L, 1); // Nil
+							
+							ERROR_BAD_FORMAT(L,
+									 lua_tostring(L, -1), // Flag
+									 lua_tostring(L, -2), // Value
+									 expected[i].type);
+						}
+
+						lua_remove(L, -2); // Value (prepare for next flag)
+
+						printf("top: %i type: %s\n", lua_gettop(L), lua_typename(L, lua_type(L, -1)));
+						// Number on top
+					}
+					break; // Switch
+				}
+				
+				lua_setfield(L, IRETURN, expected[i].name);
+				break; // For
+				
+			} else {
+				lua_pop(L, 1); // Contains_flag result
+				continue; // For
+			}
+		}
+		
+		lua_pop(L, 1); // Argument (or Value if there was one)
+		
+	} while (! lua_isnil(L, -1));
+
+	lua_pop(L, 1); // Sentinel
 
 	printf("top: %i type: %s\n", lua_gettop(L), lua_typename(L, lua_type(L, -1)));
+
 	return WCH_ARGS_OK;
 }
