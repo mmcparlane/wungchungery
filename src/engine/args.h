@@ -23,6 +23,10 @@ struct wch_Arg {
 	int type;
 };
 
+int wch_usage(lua_State* L,
+	      const char* program,
+	      const wch_Arg expected[]);
+
 int wch_parse_args(lua_State* L,
 		   int argc,
 		   const char* argv[],

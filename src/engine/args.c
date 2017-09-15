@@ -33,6 +33,12 @@
 	} while (0)
 
 
+int wch_usage(lua_State* L,
+	      const char* program,
+	      const wch_Arg expected[]) {
+	
+}
+
 #define IARG 1
 #define IFLAGS 2
 #define ISTRING 3
