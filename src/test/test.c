@@ -2,6 +2,7 @@
 // Copyright © Mason McParlane
 //
 #include <stdio.h>
+#include <stdlib.h>
 #include "lua.h"
 #include "lauxlib.h"
 #include "lualib.h"
@@ -13,6 +14,7 @@ static const wch_Arg args[] = {
 		"help",
 		"-h --help /?",
 		"prints help message",
+		WCH_ARGS_NOFALLBACK,
 		WCH_ARGS_OPTIONAL,
 		LUA_TBOOLEAN,
 	},
@@ -20,6 +22,7 @@ static const wch_Arg args[] = {
 		"value",
 		"-v --value",
 		"test value",
+	        WCH_ARGS_NOFALLBACK,
 		WCH_ARGS_OPTIONAL,
 		LUA_TNUMBER,
 	},
@@ -45,8 +48,13 @@ int test_start(int argc, const char* argv[]) {
 		return 1;
 		
 	} else {
-		//lua_getfield(L, -1, "help");
-		//printf("%i\n", lua_toboolean(L, -1));
+		lua_getfield(L, -1, "help");
+		if (lua_toboolean(L, -1)) {
+			wch_usage(L, argv[0], args);
+			exit(0);
+		} else {
+			lua_pop(L, 1); // Nil
+		}
 		
 		luaL_checktype(L, -1, LUA_TTABLE);
 		const int IARGT = lua_gettop(L);

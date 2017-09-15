@@ -14,16 +14,19 @@
 #define WCH_ARGS_OPTIONAL 0
 #define WCH_ARGS_REQUIRED 1
 
+#define WCH_ARGS_NOFALLBACK NULL
+
 typedef struct wch_Arg wch_Arg;
 struct wch_Arg {
 	const char* name;
 	const char* flags;
 	const char* description;
+	const char* fallback;
 	int mandatory;
 	int type;
 };
 
-int wch_usage(lua_State* L,
+void wch_usage(lua_State* L,
 	      const char* program,
 	      const wch_Arg expected[]);
 

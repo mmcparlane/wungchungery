@@ -3,6 +3,7 @@
 //
 
 #include <string.h>
+#include <stdio.h>
 #include "lua.h"
 #include "lauxlib.h"
 #include "args.h"
@@ -32,12 +33,57 @@
 		return WCH_ARGS_BAD_FORMAT; \
 	} while (0)
 
+#define GSUB(L, S, P, R) do { \
+		lua_getglobal((L), "string"); \
+		lua_getfield((L), -1, "gsub"); \
+		lua_pushstring((L), (S)); \
+		lua_pushstring((L), (P)); \
+		lua_pushstring((L), (R)); \
+		lua_call((L), 3, 1); \
+		lua_remove((L), -2); \
+	} while(0)
 
-int wch_usage(lua_State* L,
+#define TNAME_NOBOOL(L, T) (((T) == LUA_TBOOLEAN) ? "" : lua_typename(L, (T)))
+#define SPACE_NOBOOL(L, T) (((T) == LUA_TBOOLEAN) ? "" : " ")
+
+
+void wch_usage(lua_State* L,
 	      const char* program,
 	      const wch_Arg expected[]) {
-	
+	int i, type;
+
+	lua_getglobal(L, "print");
+
+	// Basic usage info.
+	GSUB(L, program, ".*[/\\]", "");
+	lua_pushfstring(L, "Usage: %s", lua_tostring(L, -1));
+	lua_remove(L, -2);
+	for (i = 0; expected[i].name != NULL; ++i) {
+		type = expected[i].type;
+		
+		if (expected[i].mandatory == WCH_ARGS_REQUIRED)
+			lua_pushfstring(L,
+					"%s %s%s%s",
+					lua_tostring(L, -1),
+					expected[i].name,
+					SPACE_NOBOOL(L, type),
+					TNAME_NOBOOL(L, type));
+		else
+			lua_pushfstring(L,
+					"%s [%s%s%s]",
+					lua_tostring(L, -1),
+					expected[i].name,
+					SPACE_NOBOOL(L, type),
+					TNAME_NOBOOL(L, type));
+		lua_remove(L, -2);
+	}
+
+	lua_call(L, 1, 0);
+
+	printf("top: %i, type: %s\n", lua_gettop(L), lua_typename(L, lua_type(L, -1)));
+
 }
+
 
 #define IARG 1
 #define IFLAGS 2
@@ -69,6 +115,10 @@ static int contains_flag(lua_State* L) {
 	
 	lua_pushboolean(L, 0);
 	return 1;
+	
+#undef IARG
+#undef IFLAGS
+#undef ISTRING
 }
 
 #define IRESULT 1
@@ -151,4 +201,6 @@ int wch_parse_args(lua_State* L,
 	lua_pop(L, 1); // Sentinel
 
 	return WCH_ARGS_OK;
+
+#undef IRESULT
 }
