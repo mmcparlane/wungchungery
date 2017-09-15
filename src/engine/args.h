@@ -29,6 +29,7 @@ struct wch_ArgInfo {
 typedef struct wch_AppInfo wch_AppInfo;
 struct wch_AppInfo {
 	const char* name;
+	const char* cmdname;
 	const char* description;
 };
 

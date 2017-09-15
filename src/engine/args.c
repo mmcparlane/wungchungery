@@ -50,39 +50,67 @@
 void wch_usage(lua_State* L,
 	      const wch_AppInfo* appinfo,
 	      const wch_ArgInfo expected[]) {
+
 	int i, type;
+	const wch_ArgInfo* arginfo;
+
+	// Program description.
+	lua_getglobal(L, "print");
+	lua_pushfstring(L, "ABOUT\n\t%s\n\t%s\n", appinfo->name, appinfo->description);
+	lua_call(L, 1, 0);
 
 	// Summary info.
 	lua_getglobal(L, "print");
-	GSUB(L, appinfo->name, ".*[/\\]", "");
+	
+	GSUB(L, appinfo->cmdname, ".*[/\\]", "");
 	lua_pushfstring(L, "USAGE\n\t%s", lua_tostring(L, -1));
 	lua_remove(L, -2);
 	for (i = 0; expected[i].name != NULL; ++i) {
-		type = expected[i].type;
+		arginfo = &expected[i];
 		
-		if (expected[i].mandatory == WCH_ARGS_REQUIRED)
+		if (arginfo->mandatory == WCH_ARGS_REQUIRED) {
 			lua_pushfstring(L,
 					"%s %s%s%s",
 					lua_tostring(L, -1),
-					expected[i].name,
-					SPACE_NOBOOL(L, type),
-					TNAME_NOBOOL(L, type));
-		else
+					arginfo->name,
+					SPACE_NOBOOL(L, arginfo->type),
+					TNAME_NOBOOL(L, arginfo->type));
+		} else {
 			lua_pushfstring(L,
 					"%s [%s%s%s]",
 					lua_tostring(L, -1),
-					expected[i].name,
-					SPACE_NOBOOL(L, type),
-					TNAME_NOBOOL(L, type));
+					arginfo->name,
+					SPACE_NOBOOL(L, arginfo->type),
+					TNAME_NOBOOL(L, arginfo->type));
+		}
 		lua_remove(L, -2);
 	}
 	lua_call(L, 1, 0);
 
 	// Detailed info.
 	lua_getglobal(L, "print");
+	
+	lua_pushstring(L, "\n");
 	for (i = 0; expected[i].name != NULL; ++i) {
+		arginfo = &expected[i];
 		
+		lua_pushfstring(L,
+				"%s\t%s: "
+				"\n\t\trequired: \"%s\""
+				"\n\t\tflags: \"%s\""
+				"\n\t\tdefault: \"%s\""
+				"\n\t\tinfo: \"%s\""
+				"\n\t\n",
+				lua_tostring(L, -1),
+				arginfo->name,
+				arginfo->mandatory ? "true" : "false",
+				arginfo->flags,
+				arginfo->fallback ? arginfo->fallback : "",
+				arginfo->description);
+		
+		lua_remove(L, -2);
 	}
+	lua_call(L, 1, 0);
 
 	printf("top: %i, type: %s\n", lua_gettop(L), lua_typename(L, lua_type(L, -1)));
 

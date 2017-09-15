@@ -23,7 +23,7 @@ static const wch_ArgInfo args[] = {
 		"-v --value",
 		"test value",
 	        WCH_ARGS_NOFALLBACK,
-		WCH_ARGS_OPTIONAL,
+		WCH_ARGS_REQUIRED,
 		LUA_TNUMBER,
 	},
 	{NULL, NULL, NULL, 0, 0},
@@ -36,6 +36,7 @@ static const luaL_Reg test_lib[] = {
 int test_start(int argc, const char* argv[]) {
 	
 	wch_AppInfo appinfo = {
+		"Wungchungery Test Framework",
 		argv[0],
 		"Program for running Wungchungery unit tests.",
 	};
