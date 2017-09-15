@@ -48,15 +48,14 @@
 
 
 void wch_usage(lua_State* L,
-	      const char* program,
-	      const wch_Arg expected[]) {
+	      const wch_AppInfo* appinfo,
+	      const wch_ArgInfo expected[]) {
 	int i, type;
 
+	// Summary info.
 	lua_getglobal(L, "print");
-
-	// Basic usage info.
-	GSUB(L, program, ".*[/\\]", "");
-	lua_pushfstring(L, "Usage: %s", lua_tostring(L, -1));
+	GSUB(L, appinfo->name, ".*[/\\]", "");
+	lua_pushfstring(L, "USAGE\n\t%s", lua_tostring(L, -1));
 	lua_remove(L, -2);
 	for (i = 0; expected[i].name != NULL; ++i) {
 		type = expected[i].type;
@@ -77,8 +76,13 @@ void wch_usage(lua_State* L,
 					TNAME_NOBOOL(L, type));
 		lua_remove(L, -2);
 	}
-
 	lua_call(L, 1, 0);
+
+	// Detailed info.
+	lua_getglobal(L, "print");
+	for (i = 0; expected[i].name != NULL; ++i) {
+		
+	}
 
 	printf("top: %i, type: %s\n", lua_gettop(L), lua_typename(L, lua_type(L, -1)));
 
@@ -125,7 +129,7 @@ static int contains_flag(lua_State* L) {
 int wch_parse_args(lua_State* L,
 		   int argc,
 		   const char* argv[],
-		   const wch_Arg expected[]) {
+		   const wch_ArgInfo expected[]) {
 
 	int i = 0, unsupported = 1;
 	lua_newtable(L);

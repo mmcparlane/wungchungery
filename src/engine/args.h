@@ -16,8 +16,8 @@
 
 #define WCH_ARGS_NOFALLBACK NULL
 
-typedef struct wch_Arg wch_Arg;
-struct wch_Arg {
+typedef struct wch_ArgInfo wch_ArgInfo;
+struct wch_ArgInfo {
 	const char* name;
 	const char* flags;
 	const char* description;
@@ -26,13 +26,19 @@ struct wch_Arg {
 	int type;
 };
 
+typedef struct wch_AppInfo wch_AppInfo;
+struct wch_AppInfo {
+	const char* name;
+	const char* description;
+};
+
 void wch_usage(lua_State* L,
-	      const char* program,
-	      const wch_Arg expected[]);
+	      const wch_AppInfo* appinfo,
+	      const wch_ArgInfo expected[]);
 
 int wch_parse_args(lua_State* L,
 		   int argc,
 		   const char* argv[],
-		   const wch_Arg expected[]);
+		   const wch_ArgInfo expected[]);
 
 #endif

@@ -9,7 +9,7 @@
 #include "args.h"
 
 
-static const wch_Arg args[] = {
+static const wch_ArgInfo args[] = {
 	{
 		"help",
 		"-h --help /?",
@@ -34,6 +34,12 @@ static const luaL_Reg test_lib[] = {
 };
 
 int test_start(int argc, const char* argv[]) {
+	
+	wch_AppInfo appinfo = {
+		argv[0],
+		"Program for running Wungchungery unit tests.",
+	};
+	
 	lua_State* L = luaL_newstate();
 	luaL_openlibs(L);
 	luaL_newlib(L, test_lib);
@@ -50,7 +56,7 @@ int test_start(int argc, const char* argv[]) {
 	} else {
 		lua_getfield(L, -1, "help");
 		if (lua_toboolean(L, -1)) {
-			wch_usage(L, argv[0], args);
+			wch_usage(L, &appinfo, args);
 			exit(0);
 		} else {
 			lua_pop(L, 1); // Nil
