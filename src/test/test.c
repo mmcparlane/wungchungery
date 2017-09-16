@@ -19,12 +19,12 @@ static const wch_ArgInfo args[] = {
 		LUA_TBOOLEAN,
 	},
 	{
-		"value",
-		"-v --value",
-		"Test value.",
-	        WCH_ARGS_NOFALLBACK,
+		"testdir",
+		"-d --test-dir /d",
+		"Folder containing set of Lua scripts (tests) to run.",
+	        "scripts/test/",
 		WCH_ARGS_REQUIRED,
-		LUA_TNUMBER,
+		LUA_TSTRING,
 	},
 	{NULL, NULL, NULL, 0, 0},
 };
