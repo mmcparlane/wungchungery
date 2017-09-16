@@ -201,27 +201,31 @@ int wch_parse_args(lua_State* L,
 					lua_pushvalue(L, -3); // Value
 					
 					if (lua_isnil(L, -1)) {
-						lua_pop(L, 2); // Function, Nil
-
-						ERROR_MISSING_VALUE(L, lua_tostring(L, -1)); // Flag
+						ERROR_MISSING_VALUE(L, lua_tostring(L, -3)); // Flag
 
 					} else {
 						lua_call(L, 1, 1);
 
 						if (lua_isnil(L, -1)) {
-							lua_pop(L, 1); // Nil
-							
 							ERROR_BAD_FORMAT(L,
-									 lua_tostring(L, -1), // Flag
-									 lua_tostring(L, -2), // Value
+									 lua_tostring(L, -2), // Flag
+									 lua_tostring(L, -3), // Value
 									 expected[i].type);
 						}
 
 						lua_remove(L, -2); // Value (prepare for next flag)
-
-						// Number on top
 					}
-					break; // Switch
+					// Number on top					
+					break;
+					
+				case LUA_TSTRING:
+					lua_pushvalue(L, -2); // Value
+					if (lua_isnil(L, -1)) {
+						ERROR_MISSING_VALUE(L, lua_tostring(L, -2)); // Flag
+
+					}
+					// String on top
+					break;
 				}
 				
 				lua_setfield(L, IRESULT, expected[i].name);
