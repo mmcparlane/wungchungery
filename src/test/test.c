@@ -13,7 +13,7 @@ static const wch_ArgInfo args[] = {
 	{
 		"help",
 		"-h --help /?",
-		"prints help message",
+		"Prints this help message.",
 		WCH_ARGS_NOFALLBACK,
 		WCH_ARGS_OPTIONAL,
 		LUA_TBOOLEAN,
@@ -21,7 +21,7 @@ static const wch_ArgInfo args[] = {
 	{
 		"value",
 		"-v --value",
-		"test value",
+		"Test value.",
 	        WCH_ARGS_NOFALLBACK,
 		WCH_ARGS_REQUIRED,
 		LUA_TNUMBER,
@@ -47,7 +47,6 @@ int test_start(int argc, const char* argv[]) {
 	lua_setglobal(L, "test");
 
 	int err = wch_parse_args(L, argc, argv, args);
-	printf("top: %i type: %s\n", lua_gettop(L), lua_typename(L, lua_type(L, -1)));
 	if (err) {
 		lua_getglobal(L, "print");
 		lua_rotate(L, -2, 1);

@@ -43,6 +43,16 @@
 		lua_remove((L), -2); \
 	} while(0)
 
+#define FLAG_1(L, FLAGS) do { \
+		lua_getglobal((L), "string"); \
+		lua_getfield((L), -1, "gmatch"); \
+		lua_pushstring((L), (FLAGS)); \
+		lua_pushstring((L), "%S+"); \
+		lua_call(L, 2, 1); \
+		lua_call(L, 0, 1); \
+		lua_remove(L, -2); \
+	} while (0)
+
 #define TNAME_NOBOOL(L, T) (((T) == LUA_TBOOLEAN) ? "" : lua_typename(L, (T)))
 #define SPACE_NOBOOL(L, T) (((T) == LUA_TBOOLEAN) ? "" : " ")
 
@@ -67,23 +77,26 @@ void wch_usage(lua_State* L,
 	lua_remove(L, -2);
 	for (i = 0; expected[i].name != NULL; ++i) {
 		arginfo = &expected[i];
-		
+
+		FLAG_1(L, arginfo->flags);
+
 		if (arginfo->mandatory == WCH_ARGS_REQUIRED) {
 			lua_pushfstring(L,
 					"%s %s%s%s",
+					lua_tostring(L, -2),
 					lua_tostring(L, -1),
-					arginfo->name,
 					SPACE_NOBOOL(L, arginfo->type),
 					TNAME_NOBOOL(L, arginfo->type));
 		} else {
 			lua_pushfstring(L,
 					"%s [%s%s%s]",
+					lua_tostring(L, -2),
 					lua_tostring(L, -1),
-					arginfo->name,
 					SPACE_NOBOOL(L, arginfo->type),
 					TNAME_NOBOOL(L, arginfo->type));
 		}
-		lua_remove(L, -2);
+		lua_remove(L, -2); // Flag 1
+		lua_remove(L, -2); // Previous 
 	}
 	lua_call(L, 1, 0);
 
@@ -96,26 +109,26 @@ void wch_usage(lua_State* L,
 		
 		lua_pushfstring(L,
 				"%s\t%s: "
-				"\n\t\trequired: \"%s\""
-				"\n\t\tflags: \"%s\""
-				"\n\t\tdefault: \"%s\""
-				"\n\t\tinfo: \"%s\""
-				"\n\t\n",
+				"\n\t\trequired: %s"
+				"\n\t\tflags:    %s"
+				"\n\t\ttype:     %s"
+				"\n\t\tdefault:  %s"
+				"\n"
+				"\n\t\t%s"
+				"\n"
+				"\t\n",
 				lua_tostring(L, -1),
 				arginfo->name,
 				arginfo->mandatory ? "true" : "false",
 				arginfo->flags,
-				arginfo->fallback ? arginfo->fallback : "",
+				lua_typename(L, arginfo->type),
+				arginfo->fallback ? arginfo->fallback : "none",
 				arginfo->description);
 		
 		lua_remove(L, -2);
 	}
 	lua_call(L, 1, 0);
-
-	printf("top: %i, type: %s\n", lua_gettop(L), lua_typename(L, lua_type(L, -1)));
-
 }
-
 
 #define IARG 1
 #define IFLAGS 2
