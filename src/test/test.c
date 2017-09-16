@@ -1,13 +1,14 @@
 //
 // Copyright © Mason McParlane
 //
+
 #include <stdio.h>
 #include <stdlib.h>
 #include "lua.h"
 #include "lauxlib.h"
 #include "lualib.h"
 #include "args.h"
-
+#include "fs.h"
 
 static const wch_ArgInfo args[] = {
 	{
@@ -19,10 +20,10 @@ static const wch_ArgInfo args[] = {
 		LUA_TBOOLEAN,
 	},
 	{
-		"testdir",
-		"-d --test-dir /d",
+		"dir",
+		"-d --dir /d",
 		"Folder containing set of Lua scripts (tests) to run.",
-	        "scripts/test/",
+	        "./scripts/test/",
 		WCH_ARGS_REQUIRED,
 		LUA_TSTRING,
 	},
@@ -43,8 +44,14 @@ int test_start(int argc, const char* argv[]) {
 	
 	lua_State* L = luaL_newstate();
 	luaL_openlibs(L);
+
+	// Add test lib
 	luaL_newlib(L, test_lib);
 	lua_setglobal(L, "test");
+
+	// Add filesystem lib
+	luaopen_fs(L);
+	lua_setglobal(L, "fs");
 
 	int err = wch_parse_args(L, argc, argv, args);
 	if (err) {
@@ -54,29 +61,27 @@ int test_start(int argc, const char* argv[]) {
 		return 1;
 		
 	} else {
+		// Process help flag
 		lua_getfield(L, -1, "help");
 		if (lua_toboolean(L, -1)) {
 			wch_usage(L, &appinfo, args);
-			exit(0);
-		} else {
-			lua_pop(L, 1); // Nil
+			return 1;
 		}
-		
-		luaL_checktype(L, -1, LUA_TTABLE);
-		const int IARGT = lua_gettop(L);
+		lua_pop(L, 1);
 
-		lua_pushnil(L);
-		const int ITMP = lua_gettop(L);
-	
-		lua_pushnil(L);
-		while (lua_next(L, IARGT) != 0) {
-			lua_copy(L, -2, ITMP);
-			lua_getglobal(L, "print");
-			lua_rotate(L, -3, 1);
-			lua_call(L, 2, 0);
-			lua_pushvalue(L, ITMP);
+		// Process dir flag
+		lua_getfield(L, -1, "dir");
+		if (lua_isnil(L, -1)) {
+			lua_pushstring(L,
+				       "Required parameter 'dir' is missing.");
+			return lua_error(L);
 		}
-		
+
+		// TODO
+		// There is a bug with the arg processing.
+		// When an argument has a default value and the flag is
+		// not specified it is not getting populated in the
+		// arg-parsed table.
 	}
 	return 0;
 }
