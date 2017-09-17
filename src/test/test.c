@@ -70,12 +70,12 @@ int test_start(int argc, const char* argv[]) {
 		lua_pop(L, 1);
 
 		// Process dir flag
-		lua_getfield(L, -1, "dir");
-		if (lua_isnil(L, -1)) {
-			lua_pushstring(L,
-				       "Required parameter 'dir' is missing.");
-			return lua_error(L);
-		}
+		//lua_getfield(L, -1, "dir");
+		//if (lua_isnil(L, -1)) {
+		//	lua_pushstring(L,
+		//		       "Required parameter 'dir' is missing.");
+		//	return lua_error(L);
+		//}
 
 		// TODO
 		// There is a bug with the arg processing.
