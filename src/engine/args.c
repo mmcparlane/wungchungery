@@ -3,30 +3,39 @@
 //
 
 #include <string.h>
-#include <stdio.h>
+#include <stdlib.h>
 #include "lua.h"
 #include "lauxlib.h"
 #include "args.h"
 
+// TASK
+//  Make this print to stderr instead of stdout.
+#define ERROR_NOSTACKTRACE(L) do { \
+		lua_getglobal(L, "print"); \
+		lua_pushvalue(L, -2); \
+		lua_call(L, 1, 0); \
+		exit(1); \
+	} while(0)
+	
 #define ERROR_MISSING_FLAG(L, ARG) do {	\
 		lua_pushfstring(L, "Required parameter '%s' is missing.", (ARG).name); \
-		return lua_error(L); \
+		ERROR_NOSTACKTRACE(L); \
 	} while(0)
 
 #define ERROR_MISSING_VALUE(L, FLAG) do { \
 		lua_pushfstring(L, "No value specified for '%s'.", (FLAG)); \
-		return lua_error(L); \
+		ERROR_NOSTACKTRACE(L); \
 	} while (0)
 
 #define ERROR_UNSUPPORTED_FLAG(L, FLAG) do { \
 		lua_pushfstring(L, "Parameter '%s' is not supported.", (FLAG)); \
-		return lua_error(L); \
+		ERROR_NOSTACKTRACE(L); \
 	} while (0)
 
 #define ERROR_BAD_FORMAT(L, FLAG, VALUE, TEXPECTED) do { \
 		lua_pushfstring(L, "Invalid value '%s' specified for '%s'; expected '%s'.", \
 				(VALUE), (FLAG), lua_typename((L), (TEXPECTED))); \
-		return lua_error(L); \
+		ERROR_NOSTACKTRACE(L); \
 	} while (0)
 
 #define GSUB(L, S, P, R) do { \
@@ -51,7 +60,6 @@
 
 #define TNAME_NOBOOL(L, T) (((T) == LUA_TBOOLEAN) ? "" : lua_typename(L, (T)))
 #define SPACE_NOBOOL(L, T) (((T) == LUA_TBOOLEAN) ? "" : " ")
-
 
 void wch_usage(lua_State* L,
 	      const wch_AppInfo* appinfo,
@@ -161,7 +169,6 @@ static int contains_flag(lua_State* L) {
 	lua_pushboolean(L, 0);
 	return 1;
 }
-
 
 #define EXTRACT_VALUE(L, TYPE, IFLAG, IVALUE) do { \
 		lua_pushcfunction((L), extract_value); \
