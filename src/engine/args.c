@@ -10,27 +10,23 @@
 
 #define ERROR_MISSING_FLAG(L, ARG) do {	\
 		lua_pushfstring(L, "Required parameter '%s' is missing.", (ARG).name); \
-		lua_replace(L, 1); lua_settop(L, 1); \
-		return WCH_ARGS_MISSING_FLAG; \
+		return lua_error(L); \
 	} while(0)
 
 #define ERROR_MISSING_VALUE(L, FLAG) do { \
 		lua_pushfstring(L, "No value specified for '%s'.", (FLAG)); \
-		lua_replace(L, 1); lua_settop(L, 1); \
-		return WCH_ARGS_MISSING_VALUE; \
+		return lua_error(L); \
 	} while (0)
 
 #define ERROR_UNSUPPORTED_FLAG(L, FLAG) do { \
 		lua_pushfstring(L, "Parameter '%s' is not supported.", (FLAG)); \
-		lua_replace(L, 1); lua_settop(L, 1); \
-		return WCH_ARGS_UNSUPPORTED_FLAG; \
+		return lua_error(L); \
 	} while (0)
 
 #define ERROR_BAD_FORMAT(L, FLAG, VALUE, TEXPECTED) do { \
 		lua_pushfstring(L, "Invalid value '%s' specified for '%s'; expected '%s'.", \
 				(VALUE), (FLAG), lua_typename((L), (TEXPECTED))); \
-		lua_replace(L, 1); lua_settop(L, 1); \
-		return WCH_ARGS_BAD_FORMAT; \
+		return lua_error(L); \
 	} while (0)
 
 #define GSUB(L, S, P, R) do { \
@@ -130,9 +126,16 @@ void wch_usage(lua_State* L,
 	lua_call(L, 1, 0);
 }
 
+#define CONTAINS_FLAG(L, FINDEX, FMATCHES) do {\
+		lua_pushcfunction((L), contains_flag); \
+		lua_pushvalue((L), (FINDEX)); \
+		lua_pushstring((L), (FMATCHES)); \
+		lua_call(L, 2, 1); \
+	} while(0)
+
 static int contains_flag(lua_State* L) {
-	const char* arg = luaL_checkstring(L, 1);
-	luaL_checktype(L, 2, LUA_TSTRING);
+	const char* arg = luaL_checkstring(L, 1); // Supplied flag
+	luaL_checktype(L, 2, LUA_TSTRING); // Possible flag matches
 	lua_getglobal(L, "string");
 
 	// Create flag iterator.
@@ -159,43 +162,56 @@ static int contains_flag(lua_State* L) {
 	return 1;
 }
 
-static int value_from_flag(lua_State* L) {
-	switch (expected[i].type) {
+
+#define EXTRACT_VALUE(L, TYPE, IFLAG, IVALUE) do { \
+		lua_pushcfunction((L), extract_value); \
+		lua_pushinteger((L), (TYPE)); \
+		lua_pushvalue((L), (IFLAG)); \
+		if ((TYPE) == LUA_TBOOLEAN) { \
+			lua_call(L, 2, 1); \
+		} else { \
+			lua_pushvalue(L, (IVALUE)); \
+			lua_call(L, 3, 1); \
+		} \
+	} while(0)
+
+static int extract_value(lua_State* L) {
+	lua_Integer type = luaL_checkinteger(L, 1);
+	const char* flag = luaL_checkstring(L, 2);
+	const char* value = NULL;
+	
+	switch (type) {
 	case LUA_TBOOLEAN:
 		lua_pushboolean(L, 1);
 		break;
 					
 	case LUA_TNUMBER:
-		lua_getglobal(L, "tonumber");
-		lua_pushvalue(L, -3); // Value
-					
-		if (lua_isnil(L, -1)) {
-			ERROR_MISSING_VALUE(L, lua_tostring(L, -3)); // Flag
+		if (lua_isnoneornil(L, 3)) {
+			ERROR_MISSING_VALUE(L, flag);
 
 		} else {
+			value = lua_tostring(L, 3);
+			
+			lua_getglobal(L, "tonumber");
+			lua_pushstring(L, value);
 			lua_call(L, 1, 1);
 
 			if (lua_isnil(L, -1)) {
-				ERROR_BAD_FORMAT(L,
-						 lua_tostring(L, -2), // Flag
-						 lua_tostring(L, -3), // Value
-						 expected[i].type);
+				ERROR_BAD_FORMAT(L, flag, value, type);
 			}
-
-			lua_remove(L, -2); // Value (prepare for next flag)
 		}
 		// Number on top					
 		break;
 					
 	case LUA_TSTRING:
-		lua_pushvalue(L, -2); // Value
-		if (lua_isnil(L, -1)) {
-			ERROR_MISSING_VALUE(L, lua_tostring(L, -2)); // Flag
-
+		if (lua_isnoneornil(L, 3)) {
+			ERROR_MISSING_VALUE(L, flag);
 		}
 		// String on top
 		break;
 	}
+	
+	return 1;
 }
 
 int wch_parse_args(lua_State* L,
@@ -203,7 +219,7 @@ int wch_parse_args(lua_State* L,
 		   const char* argv[],
 		   const wch_ArgInfo expected[]) {
 
-	int i = 0, unsupported = 1;
+	int i = 0, ivalue = 0, iflag = 0, unsupported = 1;
 	lua_newtable(L);
 
 	// Populate table with defaults.
@@ -217,32 +233,26 @@ int wch_parse_args(lua_State* L,
 	for (i = argc-1; i > 0; --i) lua_pushstring(L, argv[i]);
 
 	do {
+		iflag = lua_gettop(L);
+		ivalue = iflag - 1;
+		
 		// Populate table with user-supplied data.
 		for (i = 0; expected[i].name != NULL; ++i) {
-			lua_pushcfunction(L, contains_flag);
-			lua_pushvalue(L, -2);
-			lua_pushstring(L, expected[i].flags);
-			lua_call(L, 2, 1);
+
+			CONTAINS_FLAG(L, iflag, expected[i].flags);
 			
 			if (lua_toboolean(L, -1)) {
-				lua_pop(L, 1); // Boolean
-				
-				lua_pushcfunction(L, value_from_flag);
-				lua_pushinteger(L, expected[i].type); // Type
-				lua_pushvalue(L, -2); // Value
-				lua_pushvalue(L, -2); // Flag
-				lua_call(L, 3, 1);
+				lua_pop(L, 1);
 
-				// TODO: wrap this up!
+				EXTRACT_VALUE(L, expected[i].type, iflag, ivalue);
 
-				
 				lua_setfield(L, 1, expected[i].name);
 				unsupported = 0;
-				break; // For
+				break;
 				
 			} else {
-				lua_pop(L, 1); // Boolean
-				continue; // For
+				lua_pop(L, 1);
+				continue;
 			}
 		}
 
