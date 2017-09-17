@@ -223,16 +223,29 @@ int wch_parse_args(lua_State* L,
 	lua_newtable(L);
 
 	// Populate table with defaults.
-	//for (i = 0; expected[i].name != NULL; ++i)
-	//	if (expected[i].fallback != NULL)
-	//		TODO: parse arg from string
+	for (i = 0; expected[i].name != NULL; ++i) {
+		if (expected[i].fallback != NULL) {
+			lua_pushstring(L, expected[i].flags);
+			iflag = lua_gettop(L);
+			lua_pushstring(L, expected[i].fallback);
+			ivalue = lua_gettop(L);
+
+			EXTRACT_VALUE(L, expected[i].type, iflag, ivalue);
+			
+			lua_setfield(L, 1, expected[i].name);
+			lua_pop(L, 2);
+		}
+	}
+			
 	
-	if (argc < 2) return WCH_ARGS_OK;
+	if (argc < 2) return 1;
 	
 	lua_pushnil(L); // Sentinel
 	for (i = argc-1; i > 0; --i) lua_pushstring(L, argv[i]);
 
 	do {
+		unsupported = 1;
+		
 		iflag = lua_gettop(L);
 		ivalue = iflag - 1;
 		
@@ -257,7 +270,7 @@ int wch_parse_args(lua_State* L,
 		}
 
 		if (unsupported) {
-			ERROR_UNSUPPORTED_FLAG(L, lua_tostring(L, -1));
+			ERROR_UNSUPPORTED_FLAG(L, lua_tostring(L, iflag));
 			
 		} else {
 			lua_pop(L, 1); // Argument (or Value if there was one)
@@ -267,5 +280,5 @@ int wch_parse_args(lua_State* L,
 
 	lua_pop(L, 1); // Sentinel
 
-	return WCH_ARGS_OK;
+	return 1;
 }
