@@ -53,14 +53,7 @@ int test_start(int argc, const char* argv[]) {
 	luaopen_fs(L);
 	lua_setglobal(L, "fs");
 
-	int err = wch_parse_args(L, argc, argv, args);
-	if (err) {
-		lua_getglobal(L, "print");
-		lua_rotate(L, -2, 1);
-		lua_pcall(L, 1, 0, 0);
-		return 1;
-		
-	} else {
+	if (wch_parse_args(L, argc, argv, args)) {
 		// Process help flag
 		lua_getfield(L, -1, "help");
 		if (lua_toboolean(L, -1)) {

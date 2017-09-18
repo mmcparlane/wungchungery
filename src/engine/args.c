@@ -243,8 +243,7 @@ int wch_parse_args(lua_State* L,
 			lua_pop(L, 2);
 		}
 	}
-			
-	
+
 	if (argc < 2) return 1;
 	
 	lua_pushnil(L); // Sentinel
@@ -267,6 +266,9 @@ int wch_parse_args(lua_State* L,
 				EXTRACT_VALUE(L, expected[i].type, iflag, ivalue);
 
 				lua_setfield(L, 1, expected[i].name);
+
+				if (expected[i].type != LUA_TBOOLEAN) lua_pop(L, 1);
+				
 				unsupported = 0;
 				break;
 				
