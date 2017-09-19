@@ -8,34 +8,41 @@
 #include "lauxlib.h"
 #include "args.h"
 
-// TASK
-//  Make this print to stderr instead of stdout.
-#define ERROR_NOSTACKTRACE(L) do { \
-		lua_getglobal(L, "print"); \
-		lua_pushvalue(L, -2); \
-		lua_call(L, 1, 0); \
-		exit(1); \
-	} while(0)
-	
+static int error(lua_State* L) {
+	int id = luaL_checkinteger(L, lua_upvalueindex(1));
+	const char* msg = luaL_checkstring(L, lua_upvalueindex(2));
+	lua_pushstring(L, msg);
+	lua_pushinteger(L, id);
+	return 2;
+}
+
 #define ERROR_MISSING_FLAG(L, ARG) do {	\
+		lua_pushinteger(L, WCH_ARGS_MISSING_FLAG); \
 		lua_pushfstring(L, "Required parameter '%s' is missing.", (ARG).name); \
-		ERROR_NOSTACKTRACE(L); \
+		lua_pushcclosure(L, error, 2); \
+		return 1; \
 	} while(0)
 
 #define ERROR_MISSING_VALUE(L, FLAG) do { \
+		lua_pushinteger(L, WCH_ARGS_MISSING_VALUE); \
 		lua_pushfstring(L, "No value specified for '%s'.", (FLAG)); \
-		ERROR_NOSTACKTRACE(L); \
+		lua_pushcclosure(L, error, 2); \
+		return 1; \
 	} while (0)
 
 #define ERROR_UNSUPPORTED_FLAG(L, FLAG) do { \
+		lua_pushinteger(L, WCH_ARGS_UNSUPPORTED_FLAG); \
 		lua_pushfstring(L, "Parameter '%s' is not supported.", (FLAG)); \
-		ERROR_NOSTACKTRACE(L); \
+		lua_pushcclosure(L, error, 2); \
+		return 1; \
 	} while (0)
 
 #define ERROR_BAD_FORMAT(L, FLAG, VALUE, TEXPECTED) do { \
+		lua_pushinteger(L, WCH_ARGS_BAD_FORMAT); \
 		lua_pushfstring(L, "Invalid value '%s' specified for '%s'; expected '%s'.", \
 				(VALUE), (FLAG), lua_typename((L), (TEXPECTED))); \
-		ERROR_NOSTACKTRACE(L); \
+		lua_pushcclosure(L, error, 2); \
+		return 1; \
 	} while (0)
 
 #define GSUB(L, S, P, R) do { \
@@ -180,6 +187,8 @@ static int contains_flag(lua_State* L) {
 			lua_pushvalue(L, (IVALUE)); \
 			lua_call(L, 3, 1); \
 		} \
+		if (lua_isfunction(L, -1)) \
+			return 1; \
 	} while(0)
 
 static int extract_value(lua_State* L) {
@@ -190,6 +199,7 @@ static int extract_value(lua_State* L) {
 	switch (type) {
 	case LUA_TBOOLEAN:
 		lua_pushboolean(L, 1);
+		// Boolean on top
 		break;
 					
 	case LUA_TNUMBER:
@@ -226,20 +236,20 @@ int wch_parse_args(lua_State* L,
 		   const char* argv[],
 		   const wch_ArgInfo expected[]) {
 
-	int i = 0, ivalue = 0, iflag = 0, unsupported = 1;
-	lua_newtable(L);
-
+	int i = 0, iresult = 0, ivalue = 0, iflag = 0, unsupported = 1;
+	
+	lua_newtable(L); iresult = lua_gettop(L);
+	
 	// Populate table with defaults.
 	for (i = 0; expected[i].name != NULL; ++i) {
 		if (expected[i].fallback != NULL) {
-			lua_pushstring(L, expected[i].flags);
-			iflag = lua_gettop(L);
-			lua_pushstring(L, expected[i].fallback);
-			ivalue = lua_gettop(L);
+			lua_pushstring(L, expected[i].flags); iflag = lua_gettop(L);
+			lua_pushstring(L, expected[i].fallback); ivalue = lua_gettop(L);
 
 			EXTRACT_VALUE(L, expected[i].type, iflag, ivalue);
+
+			lua_setfield(L, iresult, expected[i].name);
 			
-			lua_setfield(L, 1, expected[i].name);
 			lua_pop(L, 2);
 		}
 	}
@@ -259,13 +269,13 @@ int wch_parse_args(lua_State* L,
 		for (i = 0; expected[i].name != NULL; ++i) {
 
 			CONTAINS_FLAG(L, iflag, expected[i].flags);
-			
+
 			if (lua_toboolean(L, -1)) {
 				lua_pop(L, 1);
 
 				EXTRACT_VALUE(L, expected[i].type, iflag, ivalue);
 
-				lua_setfield(L, 1, expected[i].name);
+				lua_setfield(L, iresult, expected[i].name);
 
 				if (expected[i].type != LUA_TBOOLEAN) lua_pop(L, 1);
 				
