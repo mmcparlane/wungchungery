@@ -80,10 +80,10 @@ static int run(lua_State* L) {
 			       "Required parameter 'dir' is missing.");
 		return lua_error(L);
 	} else {
-		//lua_getfield(L, ifs, "mount");
-		//lua_pushvalue(L, -2);
-		//lua_pushvalue(L, -2);
-		//lua_call(L, 1, 0);
+		lua_getfield(L, ifs, "ls");
+		lua_pushvalue(L, -2);
+		lua_call(L, 1, 1);
+		printf("%s\n", lua_tostring(L, -1));
 	}
 	return 0;
 }
