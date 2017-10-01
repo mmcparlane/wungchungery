@@ -59,10 +59,14 @@ static int fs_ls(lua_State* L) {
 	const char* path = luaL_checkstring(L, 1);
 
 	lua_pushfstring(L,
-			"if (FS.isDir('%s')) }"
-			"    FS.readFile('%s', {encoding: 'utf8', flags: 'r'});"
-			"}",
-			path, path);
+			"(function(dir) {"
+			"    var result = '';"
+			"    if (ENVIRONMENT_IS_NODE) {"
+			"        result = require('fs').readdirSync(dir).join('\\n');"
+			"    }"
+			"    return result;"
+			" })('%s')", path);
+
         lua_pushstring(L, emscripten_run_script_string(lua_tostring(L, -1)));
 	
 	return 1;
