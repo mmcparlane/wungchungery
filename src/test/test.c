@@ -10,6 +10,7 @@
 #include "args.h"
 #include "fs.h"
 
+#define DBG() printf("top: %i, type: %s\n", lua_gettop(L), lua_typename(L, lua_type(L, -1)))
 
 static wch_AppInfo appinfo = {
 	"Wungchungery Test Framework",
@@ -60,7 +61,7 @@ static lua_State* initialize() {
 }
 
 static int run(lua_State* L) {
-	int iargs = 0, itest = 0, ifs = 0;
+	int iargs = 0, itest = 0, ifs = 0, iscripts = 0;
 	luaL_checktype(L, 1, LUA_TTABLE); iargs = lua_gettop(L);
 	lua_getglobal(L, "test"); itest = lua_gettop(L);
 	lua_getglobal(L, "fs"); ifs = lua_gettop(L);
@@ -76,14 +77,22 @@ static int run(lua_State* L) {
 	// Process dir flag
 	lua_getfield(L, iargs, "dir");
 	if (lua_isnil(L, -1)) {
-		lua_pushstring(L,
-			       "Required parameter 'dir' is missing.");
+		lua_pushstring(L, "Required parameter 'dir' is missing.");
 		return lua_error(L);
 	} else {
 		lua_getfield(L, ifs, "ls");
 		lua_pushvalue(L, -2);
-		lua_call(L, 1, 1);
-		printf("%s\n", lua_tostring(L, -1));
+		lua_pushstring(L, "file");
+		lua_call(L, 2, 1);
+		iscripts = lua_gettop(L);
+
+		lua_pushnil(L);
+		while (lua_next(L, iscripts)) {
+			printf("%lld - %s\n",
+			       lua_tointeger(L, -2),
+			       lua_tostring(L, -1));
+			lua_pop(L, 1);
+		}
 	}
 	return 0;
 }
