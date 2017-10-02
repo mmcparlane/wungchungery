@@ -31,7 +31,7 @@ static int fs_rmdir(lua_State* L) {
 }
 
 static int fs_ls(lua_State* L) {
-	int iresult = 0, iiter = 0;
+	int ifiles = 0, iresult = 0, iiter = 0;
 	const char* path = luaL_gsub(L, luaL_checkstring(L, 1), "\\", "/");
 	const char* type = "all";
 	if (lua_isstring(L, 2)) type = lua_tostring(L, 2);
@@ -66,16 +66,18 @@ static int fs_ls(lua_State* L) {
 		"                }"
 		"        });"
 		"    }"
-		"    return r.join('\\n');"
+		"    return r.join('\\n').concat('\\n');"
 		" })('%s', '%s')", path, type);
 
+	ifiles = lua_gettop(L);
+	
 	lua_newtable(L);
 	iresult = lua_gettop(L);
 	
 	lua_getglobal(L, "string");
 	lua_getfield(L, -1, "gmatch");
-        lua_pushstring(L, emscripten_run_script_string(lua_tostring(L, -1)));
-	lua_pushstring(L, ".+\\n");
+        lua_pushstring(L, emscripten_run_script_string(lua_tostring(L, ifiles)));
+	lua_pushstring(L, ".+\n");
 	lua_call(L, 2, 1);
 	iiter = lua_gettop(L);
 
