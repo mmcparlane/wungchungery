@@ -80,9 +80,9 @@ static int run(lua_State* L) {
 		lua_pushstring(L, "Required parameter 'dir' is missing.");
 		return lua_error(L);
 	} else {
-		lua_getfield(L, ifs, "ls");
+		lua_getfield(L, ifs, "find");
 		lua_pushvalue(L, -2);
-		lua_pushstring(L, "file");
+		lua_pushstring(L, "*.txt");
 		lua_call(L, 2, 1);
 		iscripts = lua_gettop(L);
 

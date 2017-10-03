@@ -6,6 +6,8 @@
 #include "lauxlib.h"
 #include "lualib.h"
 
+#define DBG() printf("top: %i, type: %s\n", lua_gettop(L), lua_typename(L, lua_type(L, -1)))
+
 #if defined(__EMSCRIPTEN__)
 #include <emscripten.h>
 #endif
@@ -134,51 +136,48 @@ static int fs_pwd(lua_State* L) {
 	} while(0)
 
 static int fs_find(lua_State* L) {
-	int istring = 0, itable = 0, iresult = 0, idirs = 0, ifiles = 0;
+	int i = 0, istring = 0, iresult = 0, idirs = 0, ifiles = 0;
 	const char* path = luaL_checkstring(L, 1);
 	const char* pattern = luaL_checkstring(L, 2);
-	if (! lua_istable(L, 3)) {
-		lua_newtable(L);
-		iresult = lua_gettop(L);
-	}
+
+	lua_newtable(L);
+	iresult = lua_gettop(L);
 
 	lua_getglobal(L, "string");
 	istring = lua_gettop(L);
-	
-	lua_getglobal(L, "table");
-	itable = lua_gettop(L);
-
-	FS_LS(L, path, "file");
-	ifiles = lua_gettop(L);
 
 	lua_pushnil(L);
-	while (lua_next(L, ifiles)) {
-		lua_getfield(L, istring, "find");
-		lua_pushvalue(L, -2);
-		lua_pushstring(L, pattern);
-		lua_call(L, 2, 1);
-		if (! lua_isnil(L, -1)) {
-			lua_pop(L, 1);
-		        lua_rawseti(L, iresult, lua_rawlen(L, iresult)+1);
-		} else {
-			lua_pop(L, 2);
-		}
-	}
+	lua_pushstring(L, path);
+	while (! lua_isnil(L, -1)) {
+		path = luaL_checkstring(L, -1);
+	
+		FS_LS(L, path, "file");
+		ifiles = lua_gettop(L);
 
-	FS_LS(L, path, "dir");
-	idirs = lua_gettop(L);
-
-	if (lua_rawlen(L, -1) > 0) {
 		lua_pushnil(L);
-		while (lua_next(L, idirs)) {
-			lua_pushcfunction(L, fs_find);
+		while (lua_next(L, ifiles)) {
+			lua_getfield(L, istring, "find");
 			lua_pushvalue(L, -2);
 			lua_pushstring(L, pattern);
-			lua_pushvalue(L, iresult);
-			lua_call(L, 3, 0);
-			
-			lua_pop(L, 1);
+			lua_call(L, 2, 1);
+			if (! lua_isnil(L, -1)) {
+				lua_pop(L, 1);
+				lua_rawseti(L, iresult, lua_rawlen(L, iresult) + 1);
+			} else {
+				lua_pop(L, 2);
+			}
 		}
+		lua_pop(L, 1); // Files
+
+		FS_LS(L, path, "dir");
+		idirs = lua_gettop(L);
+
+		if (lua_rawlen(L, idirs) > 0) {
+			for (i = lua_rawlen(L, idirs) - 1; i >= 0; --i) {
+				lua_rawgeti(L, idirs, i);
+			}
+		}
+		lua_pop(L, 1); // Path
 	}
 
 	lua_pushvalue(L, iresult);
