@@ -139,67 +139,68 @@ static int fs_pwd(lua_State* L) {
 		lua_call(L, 2, 1); \
 	} while(0)
 
-static int fs_find_0(lua_State* L) {
+static int fs_find(lua_State* L) {
 	int i = 0, istring = 0, iresult = 0;
 	const char* path = luaL_checkstring(L, 1);
 	const char* pattern = luaL_checkstring(L, 2);
 
-	// TASK
-	//  Add check to ensure adequate closure space has
-	//  been allocated. Or.. is it possible to have
-	//  fs_find push itself as a closure to set the
-	//  internal upvalues?
-
-	lua_newtable(L);
-	iresult = lua_gettop(L);
-
-	lua_getglobal(L, "string");
-	istring = lua_gettop(L);
-
-	lua_pushnil(L);
-	lua_pushstring(L, path);
-	while (! lua_isnil(L, -1)) {
-		path = luaL_checkstring(L, -1);
-	
-		FS_LS(L, path, "file");
-		lua_copy(L, -1, lua_upvalueindex(1));
+	lua_pushvalue(L, lua_upvalueindex(1));
+	if (lua_isnil(L, -1)) {
+		lua_pop(L, 1);
 		
+	        FS_LS(L, path, "file");
 		FS_LS(L, path, "dir");
-		lua_copy(L, -1, lua_upvalueindex(2));
-		lua_pop(L, 3); // dir, file, path
+		lua_pushcclosure(L, fs_find, 2);
+		lua_insert(L, -3);
+		lua_call(L, 2, 1);
+		
+	} else {
+		lua_pop(L, 1);
+
+		lua_newtable(L);
+		iresult = lua_gettop(L);
+		
+		lua_getglobal(L, "string");
+		istring = lua_gettop(L);
 
 		lua_pushnil(L);
-		while (lua_next(L, lua_upvalueindex(1))) {
-			lua_getfield(L, istring, "find");
-			lua_pushvalue(L, -2);
-			lua_pushstring(L, pattern);
-			lua_call(L, 2, 1);
-			if (! lua_isnil(L, -1)) {
-				lua_pop(L, 1);
-				lua_rawseti(L, iresult, lua_rawlen(L, iresult) + 1);
+		lua_pushstring(L, path);
+		do {
+			lua_pushnil(L);
+			while (lua_next(L, lua_upvalueindex(1))) {
+				lua_getfield(L, istring, "find");
+				lua_pushvalue(L, -2);
+				lua_pushstring(L, pattern);
+				lua_call(L, 2, 1);
+				if (! lua_isnil(L, -1)) {
+					lua_pop(L, 1);
+					lua_rawseti(L, iresult, lua_rawlen(L, iresult) + 1);
 				
-			} else {
-				lua_pop(L, 2);
+				} else {
+					lua_pop(L, 2);
+				}
 			}
-		}
 
-		if (lua_rawlen(L, lua_upvalueindex(2)) > 0) {
-			for (i = lua_rawlen(L, lua_upvalueindex(2)); i > 0; --i) {
-				lua_rawgeti(L, lua_upvalueindex(2), i);
+			if (lua_rawlen(L, lua_upvalueindex(2)) > 0) {
+				for (i = lua_rawlen(L, lua_upvalueindex(2)); i > 0; --i) {
+					lua_rawgeti(L, lua_upvalueindex(2), i);
+				}
 			}
-		}
+
+			path = luaL_checkstring(L, -1);
+
+			FS_LS(L, path, "file");
+			lua_copy(L, -1, lua_upvalueindex(1));
+			
+			FS_LS(L, path, "dir");
+			lua_copy(L, -1, lua_upvalueindex(2));
+			lua_pop(L, 3); // dir, file, path
+			
+		} while (! lua_isnil(L, -1));
+		
+		lua_pushvalue(L, iresult);
 	}
 
-	lua_pushvalue(L, iresult);
-	return 1;
-}
-
-static int fs_find(lua_State* L) {
-	lua_pushnil(L);
-	lua_pushnil(L);
-	lua_pushcclosure(L, fs_find_0, 2);
-	lua_insert(L, -3);
-	lua_call(L, 2, 1);
 	return 1;
 }
 
