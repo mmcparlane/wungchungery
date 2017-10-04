@@ -79,7 +79,7 @@ static int fs_ls(lua_State* L) {
 	lua_getglobal(L, "string");
 	lua_getfield(L, -1, "gmatch");
         lua_pushstring(L, emscripten_run_script_string(lua_tostring(L, ifiles)));
-	lua_pushstring(L, ".+\n");
+	lua_pushstring(L, "[%S ]+");
 	lua_call(L, 2, 1);
 	iiter = lua_gettop(L);
 
@@ -136,7 +136,7 @@ static int fs_pwd(lua_State* L) {
 	} while(0)
 
 static int fs_find(lua_State* L) {
-	int i = 0, istring = 0, iresult = 0, idirs = 0, ifiles = 0;
+	int i = 0, istring = 0, iresult = 0;
 	const char* path = luaL_checkstring(L, 1);
 	const char* pattern = luaL_checkstring(L, 2);
 
@@ -150,12 +150,18 @@ static int fs_find(lua_State* L) {
 	lua_pushstring(L, path);
 	while (! lua_isnil(L, -1)) {
 		path = luaL_checkstring(L, -1);
+
+		printf("%s\n", path);
 	
 		FS_LS(L, path, "file");
-		ifiles = lua_gettop(L);
+		lua_copy(L, -1, lua_upvalueindex(1));
+		
+		FS_LS(L, path, "dir");
+		lua_copy(L, -1, lua_upvalueindex(2));
+		lua_pop(L, 3); // dir, file, path
 
 		lua_pushnil(L);
-		while (lua_next(L, ifiles)) {
+		while (lua_next(L, lua_upvalueindex(1))) {
 			lua_getfield(L, istring, "find");
 			lua_pushvalue(L, -2);
 			lua_pushstring(L, pattern);
@@ -163,22 +169,20 @@ static int fs_find(lua_State* L) {
 			if (! lua_isnil(L, -1)) {
 				lua_pop(L, 1);
 				lua_rawseti(L, iresult, lua_rawlen(L, iresult) + 1);
+				
+				printf("    %s\n", lua_tostring(L, -1));
 			} else {
 				lua_pop(L, 2);
 			}
 		}
-		lua_pop(L, 1); // Files
 
-		FS_LS(L, path, "dir");
-		idirs = lua_gettop(L);
-
-		if (lua_rawlen(L, idirs) > 0) {
-			for (i = lua_rawlen(L, idirs) - 1; i >= 0; --i) {
-				lua_rawgeti(L, idirs, i);
+		if (lua_rawlen(L, lua_upvalueindex(2)) > 0) {
+			for (i = lua_rawlen(L, lua_upvalueindex(2)); i > 0; --i) {
+				lua_rawgeti(L, lua_upvalueindex(2), i);
 			}
 		}
-		lua_pop(L, 1); // Path
 	}
+	DBG();
 
 	lua_pushvalue(L, iresult);
 	return 1;
