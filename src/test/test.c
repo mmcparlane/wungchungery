@@ -82,7 +82,7 @@ static int run(lua_State* L) {
 	} else {
 		lua_getfield(L, ifs, "find");
 		lua_pushvalue(L, -2);
-		lua_pushstring(L, "*.txt");
+		lua_pushstring(L, ".+.txt");
 		lua_call(L, 2, 1);
 		iscripts = lua_gettop(L);
 

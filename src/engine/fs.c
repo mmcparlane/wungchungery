@@ -47,7 +47,7 @@ static int fs_ls(lua_State* L) {
 		"        try {"
 		"            var children = fs.readdirSync(path);"
 		"        } catch(e) {"
-		"            throw new Error('Error reading directory \"' + path + '\"');"
+		"            throw new Error('ls: error reading directory \"' + path + '\"');"
 		"        }"
 		"        children.forEach("
 		"            function(file) {"
@@ -61,8 +61,11 @@ static int fs_ls(lua_State* L) {
 		"                    case 'file':"
 		"                        if (s.isFile()) r.push(file);"
 		"                        break;"
-		"                    default:"
+		"                    case 'all':"
 		"                        r.push(file);"
+		"                        break;"
+		"                    default:"
+		"                        throw new Error('ls: unsupported file type \"' + type + '\" specified');"
 		"                        break;"
 		"                    }"
 		"                }"
@@ -79,6 +82,7 @@ static int fs_ls(lua_State* L) {
 	lua_getglobal(L, "string");
 	lua_getfield(L, -1, "gmatch");
         lua_pushstring(L, emscripten_run_script_string(lua_tostring(L, ifiles)));
+
 	lua_pushstring(L, "[%S ]+");
 	lua_call(L, 2, 1);
 	iiter = lua_gettop(L);
@@ -88,7 +92,7 @@ static int fs_ls(lua_State* L) {
 	lua_call(L, 0, 1);
 	while(lua_isstring(L, -1)) {
 		lua_rawseti(L, iresult, lua_rawlen(L, iresult)+1);
-		
+
 		lua_pushvalue(L, iiter);
 		lua_call(L, 0, 1);
 	}
@@ -135,10 +139,16 @@ static int fs_pwd(lua_State* L) {
 		lua_call(L, 2, 1); \
 	} while(0)
 
-static int fs_find(lua_State* L) {
+static int fs_find_0(lua_State* L) {
 	int i = 0, istring = 0, iresult = 0;
 	const char* path = luaL_checkstring(L, 1);
 	const char* pattern = luaL_checkstring(L, 2);
+
+	// TASK
+	//  Add check to ensure adequate closure space has
+	//  been allocated. Or.. is it possible to have
+	//  fs_find push itself as a closure to set the
+	//  internal upvalues?
 
 	lua_newtable(L);
 	iresult = lua_gettop(L);
@@ -150,8 +160,6 @@ static int fs_find(lua_State* L) {
 	lua_pushstring(L, path);
 	while (! lua_isnil(L, -1)) {
 		path = luaL_checkstring(L, -1);
-
-		printf("%s\n", path);
 	
 		FS_LS(L, path, "file");
 		lua_copy(L, -1, lua_upvalueindex(1));
@@ -170,7 +178,6 @@ static int fs_find(lua_State* L) {
 				lua_pop(L, 1);
 				lua_rawseti(L, iresult, lua_rawlen(L, iresult) + 1);
 				
-				printf("    %s\n", lua_tostring(L, -1));
 			} else {
 				lua_pop(L, 2);
 			}
@@ -182,9 +189,17 @@ static int fs_find(lua_State* L) {
 			}
 		}
 	}
-	DBG();
 
 	lua_pushvalue(L, iresult);
+	return 1;
+}
+
+static int fs_find(lua_State* L) {
+	lua_pushnil(L);
+	lua_pushnil(L);
+	lua_pushcclosure(L, fs_find_0, 2);
+	lua_insert(L, -3);
+	lua_call(L, 2, 1);
 	return 1;
 }
 
