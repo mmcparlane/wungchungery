@@ -14,10 +14,38 @@
 
 
 #if defined(__EMSCRIPTEN__)
+static int fs_mount(lua_State* L) {
+	const char* real = luaL_checkstring(L, 1);
+	const char* virt = luaL_checkstring(L, 2);
+
+	lua_pushfstring(L,
+			"(function(real, virt) {"
+			"    if (ENVIRONMENT_IS_NODE) {"
+			"        FS.mkdir(virt);"
+			"        FS.mount(NODEFS, {root: real}, virt);"
+			"    }"
+			" })('%s', '%s')", real, virt);
+
+	emscripten_run_script(lua_tostring(L, -1));
+	return 0;
+}
+
+static int fs_unmount(lua_State* L) {
+	const char* virt = luaL_checkstring(L, 1);
+
+	lua_pushfstring(L,
+			"(function(virt) {"
+			"    FS.unmount(virt);"
+			"})('%s')", virt);
+
+	emscripten_run_script(lua_tostring(L, -1));
+	return 0;
+}
+
 static int fs_mkdir(lua_State* L) {
 	const char* path = luaL_checkstring(L, 1);
 
-	lua_pushfstring(L,"FS.mkdir('%s');", path);
+	lua_pushfstring(L,"(function(path){FS.mkdir(path);})('%s')", path);
 	emscripten_run_script(lua_tostring(L, -1));
 	
 	return 0;
@@ -26,7 +54,7 @@ static int fs_mkdir(lua_State* L) {
 static int fs_rmdir(lua_State* L) {
 	const char*  path = luaL_checkstring(L, 1);
 
-	lua_pushfstring(L, "FS.rmdir('%s');", path);
+	lua_pushfstring(L, "(function(path){FS.rmdir(path);})('%s')", path);
 	emscripten_run_script(lua_tostring(L, -1));
 	
 	return 0;
@@ -103,13 +131,25 @@ static int fs_ls(lua_State* L) {
 }
 
 static int fs_pwd(lua_State* L) {
-	lua_pushstring(L, emscripten_run_script_string("FS.cwd();"));
+	lua_pushstring(L, emscripten_run_script_string("FS.cwd()"));
+	DBG();
+	printf("fs_pwd: %s\n", lua_tostring(L, -1));
 	
 	return 1;
 }
 
 
 #else
+static int fs_mount(lua_State* L) {
+	// Not implemented
+	return 0;
+}
+
+static int fs_unmount(lua_State* L) {
+	// Not implemented
+	return 0;
+}
+
 static int fs_mkdir(lua_State* L) {
 	// Not implemented
 	return 0;
@@ -205,6 +245,8 @@ static int fs_find(lua_State* L) {
 }
 
 static const luaL_Reg fs_lib[] = {
+	{"unmount", fs_unmount},
+	{"mount", fs_mount},
 	{"mkdir", fs_mkdir},
 	{"rmdir", fs_rmdir},
 	{"ls", fs_ls},
