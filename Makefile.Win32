@@ -2,7 +2,7 @@
 # Copyright © Mason McParlane
 #
 
-!IF DEFINED(EMSDK)
+!IF DEFINED(EMSCRIPTEN)
 CC = emcc
 CFLAGS = 
 OBJ_EXT = bc
