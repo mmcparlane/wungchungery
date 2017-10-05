@@ -10,6 +10,10 @@
 #include "args.h"
 #include "fs.h"
 
+#ifdef __EMSCRIPTEN__
+#include <emscripten.h>
+#endif
+
 #define DBG() printf("top: %i, type: %s\n", lua_gettop(L), lua_typename(L, lua_type(L, -1)))
 
 static wch_AppInfo appinfo = {
@@ -73,11 +77,6 @@ static int run(lua_State* L) {
 	lua_getglobal(L, "fs");
 	ifs = lua_gettop(L);
 
-	lua_getfield(L, ifs, "mount");
-	lua_pushstring(L, "C:/");
-	lua_pushstring(L, "/root");
-	lua_call(L, 2, 0);
-
 	// Process help flag
 	lua_getfield(L, iargs, "help");
 	if (lua_toboolean(L, -1)) {
@@ -85,7 +84,7 @@ static int run(lua_State* L) {
 		return 1;
 	}
 	lua_pop(L, 1);
-
+	
 	// Process dir flag
 	lua_getfield(L, iargs, "dir");
 	if (lua_isnil(L, -1)) {
@@ -93,8 +92,13 @@ static int run(lua_State* L) {
 		return lua_error(L);
 		
 	} else {
+		lua_getfield(L, ifs, "mount");
+		lua_pushvalue(L, -2); // dir
+		lua_pushstring(L, "/tests");
+		lua_call(L, 2, 1);
+
 		lua_getfield(L, ifs, "find");
-		lua_pushvalue(L, -2);
+		lua_pushvalue(L, -2); // mounted dir
 		lua_pushstring(L, ".+.lua");
 		lua_call(L, 2, 1);
 		iscripts = lua_gettop(L);
@@ -104,19 +108,22 @@ static int run(lua_State* L) {
 			printf("%lld - %s\n",
 			       lua_tointeger(L, -2),
 			       lua_tostring(L, -1));
-/*
+
 			T = initialize();
 
 			luaL_loadfile(T, lua_tostring(L, -1));
 
 			if (! lua_isfunction(T, -1)) {
-				return lua_error(T);
+				fprintf(stderr, "%s\n", lua_tostring(T, -1));
+				
+			} else {
+				lua_call(T, 0, 0);
 			}
 
-			lua_call(T, 0, 0);
-
 			lua_close(T);
-*/			
+
+			printf("\n");
+			
 			lua_pop(L, 1);
 		}
 	}

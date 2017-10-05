@@ -18,16 +18,25 @@ static int fs_mount(lua_State* L) {
 	const char* real = luaL_checkstring(L, 1);
 	const char* virt = luaL_checkstring(L, 2);
 
+	// TASK
+	//  Ensure the directory was *actually* mounted
+	//  before returning. Typically though it should
+	//  throw an error if an issue arises but guarantees
+	//  would be better...
 	lua_pushfstring(L,
 			"(function(real, virt) {"
 			"    if (ENVIRONMENT_IS_NODE) {"
 			"        FS.mkdir(virt);"
 			"        FS.mount(NODEFS, {root: real}, virt);"
+			"        return virt;"
+			"    } else {"
+			"        return real;"
 			"    }"
 			" })('%s', '%s')", real, virt);
 
-	emscripten_run_script(lua_tostring(L, -1));
-	return 0;
+	lua_pushstring(L, emscripten_run_script_string(lua_tostring(L, -1)));
+	
+	return 1;
 }
 
 static int fs_unmount(lua_State* L) {
@@ -39,6 +48,7 @@ static int fs_unmount(lua_State* L) {
 			"})('%s')", virt);
 
 	emscripten_run_script(lua_tostring(L, -1));
+	
 	return 0;
 }
 
@@ -70,35 +80,28 @@ static int fs_ls(lua_State* L) {
 		L,
 		"(function(path, type) {"
 		"    var r = [];"
-		"    if (ENVIRONMENT_IS_NODE) {"
-		"        var fs = require('fs');"
-		"        try {"
-		"            var children = fs.readdirSync(path);"
-		"        } catch(e) {"
-		"            throw new Error('ls: error reading directory \"' + path + '\"');"
-		"        }"
-		"        children.forEach("
-		"            function(file) {"
-		"                file = (path.endsWith('/') ? path : path + '/') + file;"
-		"                var s = fs.statSync(file);"
-		"                if (s) {"
-		"                    switch(type) {"
-		"                    case 'dir':"
-		"                        if (s.isDirectory()) r.push(file);"
-		"                        break;"
-		"                    case 'file':"
-		"                        if (s.isFile()) r.push(file);"
-		"                        break;"
-		"                    case 'all':"
-		"                        r.push(file);"
-		"                        break;"
-		"                    default:"
-		"                        throw new Error('ls: unsupported file type \"' + type + '\" specified');"
-		"                        break;"
-		"                    }"
-		"                }"
+		"    FS.readdir(path).forEach("
+		"        function(file) {"
+		"            if (file === '.' || file === '..') return;"
+		"            file = (path.endsWith('/') ? path : path + '/') + file;"
+		"            var s = FS.stat(file);"
+		"            if (s) {"
+		"                switch(type) {"
+		"                case 'dir':"
+		"                    if (FS.isDir(s.mode)) r.push(file);"
+		"                    break;"
+		"                case 'file':"
+		"                    if (FS.isFile(s.mode)) r.push(file);"
+		"                    break;"
+		"                case 'all':"
+		"                    r.push(file);"
+		"                    break;"
+		"                default:"
+		"                    throw new Error('ls: unsupported file type \"' + type + '\" specified');"
+		"                    break;"
+		"               }"
+		"            }"
 		"        });"
-		"    }"
 		"    return r.join('\\n').concat('\\n');"
 		" })('%s', '%s')", path, type);
 
@@ -132,9 +135,7 @@ static int fs_ls(lua_State* L) {
 
 static int fs_pwd(lua_State* L) {
 	lua_pushstring(L, emscripten_run_script_string("FS.cwd()"));
-	DBG();
-	printf("fs_pwd: %s\n", lua_tostring(L, -1));
-	
+
 	return 1;
 }
 
