@@ -9,6 +9,7 @@
 #include "lualib.h"
 #include "args.h"
 #include "fs.h"
+#include "equeue.h"
 
 #ifdef __EMSCRIPTEN__
 #include <emscripten.h>
@@ -42,6 +43,9 @@ static const wch_ArgInfo arginfo[] = {
 	{NULL, NULL, NULL, 0, 0},
 };
 
+// TASK
+//  Add routines for generating test reports
+//  via assertion functions exposed to scripts.
 static const luaL_Reg test_lib[] = {
 	{NULL, NULL},
 };
@@ -60,6 +64,11 @@ static lua_State* initialize() {
 	lua_pushcfunction(L, luaopen_fs);
 	lua_call(L, 0, 1);
 	lua_setglobal(L, "fs");
+
+	// Add equeue lib
+	lua_pushcfunction(L, luaopen_equeue);
+	lua_call(L, 0, 1);
+	lua_setglobal(L, "equeue");
 
 	return L;
 }
@@ -117,7 +126,8 @@ static int run(lua_State* L) {
 				fprintf(stderr, "%s\n", lua_tostring(T, -1));
 				
 			} else {
-				lua_call(T, 0, 0);
+				int err = lua_pcall(T, 0, 0, 0);
+				if (err) fprintf(stderr, "Error: %s\n", lua_tostring(T, -1));
 			}
 
 			lua_close(T);
