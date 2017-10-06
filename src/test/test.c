@@ -74,7 +74,7 @@ static lua_State* initialize() {
 }
 
 static int run(lua_State* L) {
-	int iargs = 0, itest = 0, ifs = 0, iscripts = 0;
+	int err = 0, iargs = 0, itest = 0, ifs = 0, iscripts = 0;
 	lua_State* T = NULL;
 	
 	luaL_checktype(L, 1, LUA_TTABLE);
@@ -120,13 +120,13 @@ static int run(lua_State* L) {
 
 			T = initialize();
 
-			luaL_loadfile(T, lua_tostring(L, -1));
-
-			if (! lua_isfunction(T, -1)) {
+			err = luaL_loadfile(T, lua_tostring(L, -1));
+			
+			if (err) {
 				fprintf(stderr, "%s\n", lua_tostring(T, -1));
 				
 			} else {
-				int err = lua_pcall(T, 0, 0, 0);
+				err = lua_pcall(T, 0, 0, 0);
 				if (err) fprintf(stderr, "Error: %s\n", lua_tostring(T, -1));
 			}
 
