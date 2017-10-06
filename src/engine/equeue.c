@@ -1,45 +1,89 @@
 //
 // Copyright © Mason McParlane
 //
-//   Lua event-queue data structure which allows Lua
-//   code (game-logic-triggered), C code (signals, etc.), and
-//   JavaScript(HTML/CSS UI interaction) to trigger events on
-//   the runtime system.
-//
-//   Some of these events will be common to both native
-//   and Emscripten implementations--for instance: stop,
-//   pause, resume, etc. Others will be specific to a
-//   particular implementation.
-//
-//   Some events get consumed by the main loop while others
-//   get consumed by in other places. Hence, the main loop
-//   will be responsible for processing the event queue before
-//   propagating events to registered handlers.
-//
-//   Event processing goes something like:
-//      - Outside event occurs and gets
-//        converted/placed on Lua stack.
-//      - Game loop reads event from stack
-//        and handles the event if necessary.
-//      - Depending on the event, any reg-
-//        istered event-handlers get called.
-//      - The game loop then proceeds to
-//        call the AI, Update, etc.
 
 #include "lua.h"
 #include "lauxlib.h"
 
+typedef struct wch_Event wch_Event;
+typedef struct wch_Update wch_Update;
+typedef struct wch_EventInfo wch_EventInfo;
+typedef int (*wch_NewEvent)(lua_State* L, wch_Event* event);
+
+enum {
+	WCH_EUPDATE,
+	WCH_ERENDER,
+	WCH_ESTART,
+	WCH_ESTOP,
+	WCH_EPAUSE,	
+	WCH_ETOTAL,
+};
+
+struct wch_Update {
+	lua_Number frameratio;
+};
+
+struct wch_Event {
+        lua_Integer id;
+	
+	union {
+		wch_Update update;
+	};
+};
+
+struct wch_EventInfo {
+	lua_Integer id;
+	const char* name;
+	wch_NewEvent create;
+};
+
+static int newupdate(lua_State* L, wch_Event* event) {
+	return 0;
+}
+
+static int newrender(lua_State* L, wch_Event* event) {
+	return 0;
+}
+
+static int newstart(lua_State* L, wch_Event* event) {
+	return 0;
+}
+
+static int newstop(lua_State* L, wch_Event* event) {
+	return 0;
+}
+
+static int newpause(lua_State* L, wch_Event* event) {
+	return 0;
+}
+
+static const wch_EventInfo eventinfo[WCH_ETOTAL] = {
+	[WCH_EUPDATE] = {WCH_EUPDATE, "EUPDATE", newupdate},
+	[WCH_ERENDER] = {WCH_ERENDER, "ERENDER", newrender},
+	[WCH_ESTART] = {WCH_ESTART, "ESTART", newstart},
+	[WCH_ESTOP] = {WCH_ESTOP, "ESTOP", newstop},
+	[WCH_EPAUSE] = {WCH_EPAUSE, "EPAUSE", newpause},
+};
+
+#define QUEUE_DEFAULT_SIZE 25
+
 static int equeue_new(lua_State* L) {
+	lua_Integer size = luaL_optinteger(L, 1, QUEUE_DEFAULT_SIZE);
+	
 	lua_newtable(L);
-	{
-		lua_newtable(L);
-		lua_setfield(L, -2, "handlers");
 	
-		lua_pushinteger(L, 0);
-		lua_setfield(L, -2, "first");
+	lua_newtable(L);
+	lua_setfield(L, -2, "handlers");
 	
-		lua_pushinteger(L, -1);
-		lua_setfield(L, -2, "last");
+	lua_pushinteger(L, 0);
+	lua_setfield(L, -2, "first");
+	
+	lua_pushinteger(L, -1);
+	lua_setfield(L, -2, "last");
+
+	for (int i = 0; i < WCH_ETOTAL; ++i) {
+		lua_pushinteger(L, eventinfo[i].id);
+		lua_setfield(L, -2, eventinfo[i].name);
 	}
 	
 	return 1;
@@ -106,8 +150,6 @@ static int equeue_process(lua_State* L) {
 static int equeue_receive(lua_State* L) {
 	return 0;
 }
-
-
 
 static const luaL_Reg equeue_lib[] = {
 	{"new", equeue_new},
