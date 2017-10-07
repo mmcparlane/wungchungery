@@ -4,7 +4,7 @@
 
 !IF DEFINED(EMSCRIPTEN)
 CC = emcc
-CFLAGS = 
+CFLAGS = -s MODULARIZE=1
 OBJ_EXT = bc
 EXE_EXT = js
 OUT_PFX = "-o "
@@ -13,8 +13,13 @@ INCLUDE_PFX = -I
 LNKCMD = $(CC)
 LNKFLAGS = $(CFLAGS)
 
+!IF DEFINED(PRELOAD)
+PRELOAD_TEST = --preload-file scripts/test
+PRELOAD_ENGINE = --preload-file scripts/engine
+!ENDIF
+
 !IF DEFINED(RELEASE)
-CFLAGS = $(CFLAGS) -O2
+CFLAGS = $(CFLAGS) -O3 --closure 1
 !ENDIF
 
 !ELSE
@@ -90,10 +95,10 @@ test: $(BUILD_DIR)\test.$(EXE_EXT)
 rebuild: clean all
 
 $(BUILD_DIR)\engine.$(EXE_EXT): $(LUA_OBJS) $(ENGINE_OBJS) $(ENGINE_OBJ_DIR)\main.$(OBJ_EXT)
-	$(LNKCMD) $(LNKFLAGS) $? "$(OUT_PFX)$@"
+	$(LNKCMD) $(LNKFLAGS) $(PRELOAD_ENGINE) $? "$(OUT_PFX)$@"
 
 $(BUILD_DIR)\test.$(EXE_EXT): $(LUA_OBJS) $(ENGINE_OBJS) $(TEST_OBJS) $(TEST_OBJ_DIR)\main.$(OBJ_EXT)
-	$(LNKCMD) $(LNKFLAGS) $? "$(OUT_PFX)$@"
+	$(LNKCMD) $(LNKFLAGS) $(PRELOAD_TEST) $? "$(OUT_PFX)$@"
 
 {$(LUA_SRC_DIR)}.c{$(LUA_OBJ_DIR)}.$(OBJ_EXT):
 	- @ MKDIR $(LUA_OBJ_DIR) > nul 2> nul
