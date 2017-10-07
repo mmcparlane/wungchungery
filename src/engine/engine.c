@@ -93,30 +93,50 @@ static int engine_run(lua_State* L) {
 
 
 static int engine_update(lua_State* L) {
-	double lag = lua_tonumber(L, lua_upvalueindex(1));
-	double before = lua_tonumber(L, lua_upvalueindex(2));
+	lua_Number lag, now, before, gap;
+	
+	lag = lua_tonumber(L, lua_upvalueindex(1));
+	before = lua_tonumber(L, lua_upvalueindex(2));
 
 	lua_pushcfunction(L, engine_clock_now);
 	lua_call(L, 0, 1);
 	
-	double now = luaL_checknumber(L, 1);
-	double gap = now - before;
+	now = luaL_checknumber(L, 1);
+	gap = now - before;
+	
 	lag += gap;
 
-	printf("lag: '%f', before: '%f', now: '%f', gap: '%f'\n",
-	       lag, before, now, gap);
+	lua_getglobal(L, "oninput");
+	if (lua_isfunction(L, -1)) {
+		lua_call(L, 0, 0);
 
-	// input();
+	} else {
+		lua_pop(L, 1);
+	}
 
 	while (lag >= ENGINE_UPDATE_INTERVAL) {
-		// update();		
+		
+		lua_getglobal(L, "onupdate");
+		if (lua_isfunction(L, -1)) {
+			lua_call(L, 0, 0);
+			
+		} else {
+			lua_pop(L, 1);
+		}
+		
 		lag -= ENGINE_UPDATE_INTERVAL;
 	}
 
-	// render(lag / ENGINE_UPDATE_INTERVAL);
+	lua_getglobal(L, "onrender");
+	if (lua_isfunction(L, -1)) {
+		lua_pushnumber(L, (lag / ENGINE_UPDATE_INTERVAL));
+		lua_call(L, 1, 0);
+		
+	} else {
+		lua_pop(L, 1);
+	}
 
-	// Update closure variables for next
-	// iteration.
+	// Update closure variables for next iteration.
 	lua_pushnumber(L, lag);
 	lua_copy(L, -1, lua_upvalueindex(1));
 	lua_pushnumber(L, now);
