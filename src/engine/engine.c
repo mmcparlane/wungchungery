@@ -15,7 +15,6 @@
 #include <emscripten.h>
 #endif
 
-#define ENGINE_UPDATE_INTERVAL 50
 
 static int engine_run(lua_State* L);
 static int engine_update(lua_State* L);
@@ -43,6 +42,14 @@ static const wch_ArgInfo arginfo[] = {
 	        "./scripts/engine/",
 		WCH_ARGS_REQUIRED,
 		LUA_TSTRING,
+	},
+	{
+		"interval",
+		"-i --interval /i",
+		"Milliseconds between simulation updates.",
+	        "50.0",
+		WCH_ARGS_REQUIRED,
+		LUA_TNUMBER,
 	},
 	{NULL, NULL, NULL, 0, 0},
 };
@@ -93,10 +100,11 @@ static int engine_run(lua_State* L) {
 
 
 static int engine_update(lua_State* L) {
-	lua_Number lag, now, before, gap;
-	
-	lag = lua_tonumber(L, lua_upvalueindex(1));
-	before = lua_tonumber(L, lua_upvalueindex(2));
+	lua_Number lag, now, before, gap, interval;
+
+	interval = lua_tonumber(L, lua_upvalueindex(1));
+	lag = lua_tonumber(L, lua_upvalueindex(2));
+	before = lua_tonumber(L, lua_upvalueindex(3));
 
 	lua_pushcfunction(L, engine_clock_now);
 	lua_call(L, 0, 1);
@@ -114,7 +122,7 @@ static int engine_update(lua_State* L) {
 		lua_pop(L, 1);
 	}
 
-	while (lag >= ENGINE_UPDATE_INTERVAL) {
+	while (lag >= interval) {
 		
 		lua_getglobal(L, "onupdate");
 		if (lua_isfunction(L, -1)) {
@@ -124,12 +132,12 @@ static int engine_update(lua_State* L) {
 			lua_pop(L, 1);
 		}
 		
-		lag -= ENGINE_UPDATE_INTERVAL;
+		lag -= interval;
 	}
 
 	lua_getglobal(L, "onrender");
 	if (lua_isfunction(L, -1)) {
-		lua_pushnumber(L, (lag / ENGINE_UPDATE_INTERVAL));
+		lua_pushnumber(L, (lag / interval));
 		lua_call(L, 1, 0);
 		
 	} else {
@@ -138,9 +146,9 @@ static int engine_update(lua_State* L) {
 
 	// Update closure variables for next iteration.
 	lua_pushnumber(L, lag);
-	lua_copy(L, -1, lua_upvalueindex(1));
-	lua_pushnumber(L, now);
 	lua_copy(L, -1, lua_upvalueindex(2));
+	lua_pushnumber(L, now);
+	lua_copy(L, -1, lua_upvalueindex(3));
 
 	return 0;
 }
@@ -158,15 +166,7 @@ static lua_State* initialize() {
 	luaL_openlibs(L);
 
 	// Add engine lib
-	luaL_newlib(L, engine_lib);
-
-	// ... register functions
-	lua_pushstring(L, "update");
-	lua_pushnumber(L, 0.0);
-	lua_pushcfunction(L, engine_clock_now);
-	lua_call(L, 0, 1);
-	lua_pushcclosure(L, engine_update, 2);
-	lua_settable(L, -3);	
+	luaL_newlib(L, engine_lib);	
 	lua_setglobal(L, "engine");
 
 	// Add filesystem lib
@@ -229,10 +229,29 @@ static int run(lua_State* L) {
 
 			lua_pop(L, 1);
 		}
-	
+
+		// Create update closure with 3 upvalues:
+		// interval, lag, before.
+		lua_pushstring(L, "update");
+		
+		lua_getfield(L, iargs, "interval");
+	        if (lua_isnil(L, -1)) {
+			lua_pushstring(L, "Required parameter 'interval' is missing.");
+			return lua_error(L);
+		}
+		
+		lua_pushnumber(L, 0.0);
+		
+		lua_pushcfunction(L, engine_clock_now);
+		lua_call(L, 0, 1);
+		
+		lua_pushcclosure(L, engine_update, 3);
+		lua_settable(L, iengine);
+		
 		// Run the simulation.
 		lua_pushcfunction(L, engine_run);
 		lua_call(L, 0, 0);
+
 	}
 
 	return 0;
