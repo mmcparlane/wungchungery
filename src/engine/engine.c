@@ -175,10 +175,45 @@ static int run(lua_State* L) {
 		return 1;
 	}
 	lua_pop(L, 1);
+
+	// Process scripts flag
+	lua_getfield(L, iargs, "scripts");
+	if (lua_isnil(L, -1)) {
+		lua_pushstring(L, "Required parameter 'scripts' is missing.");
+		return lua_error(L);
+	} else {
+		lua_getfield(L, ifs, "mount");
+		lua_pushvalue(L, -2); // dir
+		lua_pushstring(L, "/scripts");
+		lua_call(L, 2, 1);
+
+		lua_getfield(L, ifs, "find");
+		lua_pushvalue(L, -2); // mounted dir
+		lua_pushstring(L, ".+.lua");
+		lua_call(L, 2, 1);
+		iscripts = lua_gettop(L);
+
+		lua_pushnil(L);
+		while (lua_next(L, iscripts)) {
+			printf("Loading script '%s'\n",
+			       lua_tostring(L, -1));
+
+			err = luaL_loadfile(L, lua_tostring(L, -1));
+			if (err) {
+				fprintf(stderr, "%s\n", lua_tostring(L, -1));
+				
+			} else {
+				err = lua_pcall(L, 0, 0, 0);
+			        if (err) fprintf(stderr, "Error: %s\n", lua_tostring(L, -1));
+			}
+
+			lua_pop(L, 1);
+		}
 	
-	// Run the simulation.
-	lua_pushcfunction(L, engine_run);
-	lua_call(L, 0, 0);
+		// Run the simulation.
+		lua_pushcfunction(L, engine_run);
+		lua_call(L, 0, 0);
+	}
 
 	return 0;
 
