@@ -9,13 +9,11 @@
 #include "lualib.h"
 #include "args.h"
 #include "fs.h"
-#include "equeue.h"
 
 #ifdef __EMSCRIPTEN__
 #include <emscripten.h>
 #endif
 
-#define DBG() printf("top: %i, type: %s\n", lua_gettop(L), lua_typename(L, lua_type(L, -1)))
 
 static wch_AppInfo appinfo = {
 	"Wungchungery Test Framework",
@@ -64,11 +62,6 @@ static lua_State* initialize() {
 	lua_pushcfunction(L, luaopen_fs);
 	lua_call(L, 0, 1);
 	lua_setglobal(L, "fs");
-
-	// Add equeue lib
-	lua_pushcfunction(L, luaopen_equeue);
-	lua_call(L, 0, 1);
-	lua_setglobal(L, "equeue");
 
 	return L;
 }

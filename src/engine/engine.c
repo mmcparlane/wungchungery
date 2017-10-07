@@ -62,7 +62,6 @@ static int engine_run(lua_State* L) {
 	exit(EXIT_FAILURE);
 	return 0;
 }
-
 #endif
 
 
@@ -80,13 +79,6 @@ static int engine_update(lua_State* L) {
 	printf("lag: '%f', before: '%f', now: '%f', gap: '%f'\n",
 	       lag, before, now, gap);
 
-	// Three event queues exist: one for input events,
-	// another for update events, last for render events.
-	// When event-handlers get registered or when events
-	// are fired they get enqueued on the appropriate
-	// event handler based on the event ID. Each event
-	// has a prepopulated type containing all data asso-
-	// ciated with that event.
 	// input();
 
 	while (lag >= ENGINE_UPDATE_INTERVAL) {
@@ -95,16 +87,6 @@ static int engine_update(lua_State* L) {
 	}
 
 	// render(lag / ENGINE_UPDATE_INTERVAL);
-	
-	/*
-	int error;
-
-	error = luaL_loadstring(L, buff) || lua_pcall(L, 0, 0, 0);
-	if (error) {
-		fprintf(stderr, "%s\n", lua_tostring(L, -1));
-		lua_pop(L, 1);
-	}
-	*/
 
 	// Update closure variables for next
 	// iteration.

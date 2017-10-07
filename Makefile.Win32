@@ -42,8 +42,7 @@ ENGINE_SRC_DIR = $(SRC_DIR)\engine
 ENGINE_OBJ_DIR = $(BUILD_DIR)\engine
 ENGINE_OBJS = $(ENGINE_OBJ_DIR)\args.$(OBJ_EXT) \
 	      $(ENGINE_OBJ_DIR)\fs.$(OBJ_EXT) \
-	      $(ENGINE_OBJ_DIR)\engine.$(OBJ_EXT) \
-	      $(ENGINE_OBJ_DIR)\equeue.$(OBJ_EXT)
+	      $(ENGINE_OBJ_DIR)\engine.$(OBJ_EXT)
 
 LUA_SRC_DIR = libs\lua\lua-5.3.4\src
 LUA_OBJ_DIR = $(BUILD_DIR)\lua
