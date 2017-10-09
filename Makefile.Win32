@@ -2,24 +2,31 @@
 # Copyright © Mason McParlane
 #
 
+BUILD_DIR = build
+SRC_DIR = src
+SCRIPT_DIR = scripts
+
 !IF DEFINED(EMSCRIPTEN)
+
+!IF DEFINED(RELEASE)
+CFLAGS = $(CFLAGS) -O3 --closure 1
+!ENDIF
+
+WEB_DIR = $(SRC_DIR)/web
 CC = emcc
-CFLAGS = -s MODULARIZE=1
+CFLAGS = 
 OBJ_EXT = bc
-EXE_EXT = js
+EXE_EXT = html
 OUT_PFX = "-o "
 OUT_PFX2 = $(OUT_PFX)
 INCLUDE_PFX = -I
 LNKCMD = $(CC)
-LNKFLAGS = $(CFLAGS)
+LNKFLAGS = $(CFLAGS) -s MODULARIZE=1 -s EXPORT_NAME="'WCH'"
 
-!IF DEFINED(PRELOAD)
-PRELOAD_TEST = --preload-file scripts/test
-PRELOAD_ENGINE = --preload-file scripts/engine
-!ENDIF
-
-!IF DEFINED(RELEASE)
-CFLAGS = $(CFLAGS) -O3 --closure 1
+!IF DEFINED(BROWSER)
+PRELOAD_TEST = --preload-file $(SCRIPT_DIR)/test
+PRELOAD_ENGINE = --preload-file $(SCRIPT_DIR)/engine
+LNKFLAGS = $(LNKFLAGS) --shell-file $(WEB_DIR)/template.html
 !ENDIF
 
 !ELSE
@@ -34,10 +41,6 @@ LNKFLAGS =
 NOLINKFLAG = /c
 
 !ENDIF
-
-
-BUILD_DIR = build
-SRC_DIR = src
 
 TEST_SRC_DIR = $(SRC_DIR)\test
 TEST_OBJ_DIR = $(BUILD_DIR)\test
