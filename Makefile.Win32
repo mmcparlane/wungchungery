@@ -16,7 +16,7 @@ WEB_DIR = $(SRC_DIR)/web
 CC = emcc
 CFLAGS = 
 OBJ_EXT = bc
-EXE_EXT = html
+EXE_EXT = js
 OUT_PFX = "-o "
 OUT_PFX2 = $(OUT_PFX)
 INCLUDE_PFX = -I
@@ -26,7 +26,6 @@ LNKFLAGS = $(CFLAGS) -s MODULARIZE=1 -s EXPORT_NAME="'WCH'"
 !IF DEFINED(BROWSER)
 PRELOAD_TEST = --preload-file $(SCRIPT_DIR)/test
 PRELOAD_ENGINE = --preload-file $(SCRIPT_DIR)/engine
-LNKFLAGS = $(LNKFLAGS) --shell-file $(WEB_DIR)/template.html
 !ENDIF
 
 !ELSE
