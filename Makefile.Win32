@@ -99,9 +99,13 @@ engine: $(BUILD_DIR)\engine.$(EXE_EXT)
 test: $(BUILD_DIR)\test.$(EXE_EXT)
 
 web:
-	@ powershell -Command "'$(WEB_OBJS)' -split '\s+'| foreach {cp -Path $$_ -Destination $(WEB_OBJ_DIR) -Recurse -Force}"
+	powershell -Command "'$(WEB_OBJS)' -split '\s+'| foreach {cp -Path $$_ -Destination $(WEB_OBJ_DIR) -Recurse -Force}"
+
+clean:
+	powershell -Command "rm $(BUILD_DIR)\* -Recurse"
 
 rebuild: clean all
+
 
 $(BUILD_DIR)\engine.$(EXE_EXT): $(LUA_OBJS) $(ENGINE_OBJS) $(ENGINE_OBJ_DIR)\main.$(OBJ_EXT)
 	$(LNKCMD) $(LNKFLAGS) $(PRELOAD_ENGINE) $? "$(OUT_PFX)$@"
@@ -120,7 +124,4 @@ $(BUILD_DIR)\test.$(EXE_EXT): $(LUA_OBJS) $(ENGINE_OBJS) $(TEST_OBJS) $(TEST_OBJ
 {$(TEST_SRC_DIR)}.c{$(TEST_OBJ_DIR)}.$(OBJ_EXT):
 	- @ MKDIR $(TEST_OBJ_DIR) > nul 2> nul
 	$(CC) $(CFLAGS) $(INCLUDE_PFX)$(LUA_SRC_DIR) $(INCLUDE_PFX)$(ENGINE_SRC_DIR) $(NOLINKFLAG) "$(OUT_PFX2)$@" $<
-
-clean:
-	@ FOR /R $(BUILD_DIR) %X IN (*.$(OBJ_EXT)) DO DEL %X
 
