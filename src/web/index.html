@@ -33,14 +33,14 @@
                     <legend>command prompt</legend>
                     <textarea id="wch-command" placeholder="Enter some commands..."></textarea>
                     <div class="button-group">
-                        <a id="wch-execute" href="#" class="button">Submit</a>
+                        <a id="wch-command-submit" href="#" class="button">Submit</a>
                     </div>
                 </fieldset>
 
                 <fieldset class="fieldset">
                   <legend>simulation controls</legend>
                     <div class="button-group">
-                        <a id="wch-start" href="#" class="button"><i class="fi-play"></i></a>
+                        <a id="wch-play" href="#" class="button"><i class="fi-play"></i></a>
                         <a id="wch-stop" href="#" class="button"><i class="fi-stop"></i></a>
                         <a id="wch-pause" href="#" class="button"><i class="fi-pause"></i></a>
                     </div>
@@ -51,7 +51,7 @@
                 <label>
                   <textarea id="wch-output" rows="10"></textarea>
                   <div class="button-group">
-                      <a id="wch-start" href="#" class="button"><i class="fi-refresh"></i></a>
+                      <a id="wch-output-refresh" href="#" class="button"><i class="fi-refresh"></i></a>
                   </div>
                 </label>
             </div>
@@ -70,17 +70,23 @@
       $(document).foundation();
 
       (function(wch){
-        var progressElement = document.getElementById('wch-progress');
+        var progress = document.getElementById('wch-progress');
+        var command = document.getElementById('wch-command');
+        var output = document.getElementById('wch-output');
+        var canvas = document.getElementById('wch-simulation');
+        var play = document.getElementById('wch-play');
+        var stop = document.getElementById('wch-stop');
+        var pause = document.getElementById('wch-pause');
+        var outputRefresh = document.getElementById('wch-output-refresh');
+        var commandSubmit = document.getElementById('wch-command-submit');
+
         var Module = {
-          arguments: ["-s", "/scripts"],
-
-          preRun: [],
-
-          postRun: [],
-
-          print: (function() {
-            var element = document.getElementById('wch-output');
-            if (element) element.value = ''; // clear browser cache
+          'arguments': ["-s", "/scripts"],
+          'totalDependencies': 0,
+          'preRun': [],
+          'postRun': [],
+          'print': (function() {
+            if (output) output.value = ''; // clear browser cache
             return function(text) {
               if (arguments.length > 1) text = Array.prototype.slice.call(arguments).join(' ');
               // These replacements are necessary if you render to raw HTML
@@ -89,33 +95,28 @@
               //text = text.replace(/>/g, "&gt;");
               //text = text.replace('\n', '<br>', 'g');
               console.log(text);
-              if (element) {
-                element.value += text + "\n";
-                element.scrollTop = element.scrollHeight; // focus on bottom
+              if (output) {
+                output.value += text + "\n";
+                output.scrollTop = output.scrollHeight; // focus on bottom
               }
             };
           })(),
-          
-          printErr: function(text) {
+          'printErr': function(text) {
             if (arguments.length > 1) text = Array.prototype.slice.call(arguments).join(' ');
-            if (0) { // XXX disabled for safety typeof dump == 'function') {
-              dump(text + '\n'); // fast, straight to the real console
-            } else {
-              console.error(text);
+            console.error(text);
+            if (output) {
+              output.value += text + "\n";
+              output.scrollTop = output.scrollHeight; // focus on bottom
             }
           },
-
-          canvas: (function() {
-            var canvas = document.getElementById('wch-simulation');
-
+          'canvas': (function() {
             // As a default initial behavior, pop up an alert when webgl context is lost. To make your
             // application robust, you may want to override this behavior before shipping!
             // See http://www.khronos.org/registry/webgl/specs/latest/1.0/#5.15.2
             canvas.addEventListener("webglcontextlost", function(e) { alert('WebGL context lost. You will need to reload the page.'); e.preventDefault(); }, false);
             return canvas;
           })(),
-
-          setStatus: function(text) {
+          'setStatus': function(text) {
             if (!Module.setStatus.last) Module.setStatus.last = { time: Date.now(), text: '' };
             if (text === Module.setStatus.text) return;
             var m = text.match(/([^(]+)\((\d+(\.\d+)?)\/(\d+)\)/);
@@ -123,27 +124,24 @@
             if (m && now - Date.now() < 30) return; // if this is a progress update, skip it if too soon
             if (m) {
               text = m[1];
-              progressElement.getElementsByClassName("progress-meter")[0].style.width = string(parseInt(m[2])*100) + '%';
-              //progressElement.max = parseInt(m[4])*100;
-              progressElement.hidden = false;
+              progress.getElementsByClassName("progress-meter")[0].style.width = string(parseInt(m[2])*100) + '%';
+              //progress.max = parseInt(m[4])*100;
+              progress.hidden = false;
 
             } else {
-              progressElement.getElementsByClassName("progress-meter")[0].style.width = '100%';
-              //progressElement.max = null;
-              progressElement.hidden = true;
+              progress.getElementsByClassName("progress-meter")[0].style.width = '100%';
+              //progress.max = null;
+              progress.hidden = true;
             }
             console.info(text);
           },
-
-          totalDependencies: 0,
-
-          monitorRunDependencies: function(left) {
+          'monitorRunDependencies': function(left) {
             this.totalDependencies = Math.max(this.totalDependencies, left);
             Module.setStatus(left ? 'Preparing... (' + (this.totalDependencies-left) + '/' + this.totalDependencies + ')' : 'All downloads complete.');
           },
         };
-        Module.setStatus('Downloading...');
 
+        Module.setStatus('Downloading...');
 
         window.onerror = function() {
           Module.setStatus('Exception thrown, see JavaScript console');
@@ -152,7 +150,28 @@
           };
         };
 
-        //wch(Module);
+        play.onclick = function(event) {
+          // TASK
+          //  If simulation is running already send a stop command to the
+          //  C implementation for graceful shutdown.
+          wch(Module);
+        };
+
+        stop.onclick = function(event) {
+
+        }
+
+        pause.onclick = function(event) {
+
+        }
+
+        outputRefresh.onclick = function(event) {
+
+        }
+
+        commandSubmit.onclick = function(event) {
+          
+        }
 
       })(WCH);
     </script>
