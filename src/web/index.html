@@ -12,20 +12,18 @@
   <body>
     <div class="grid-container">
       <div class="grid-x grid-padding-x">
-        <div class="large-8 cell">
+        <div class="large-7 cell">
           <div id="wch-progress" class="progress" role="progressbar" tabindex="0"
                aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">
                <div class="progress-meter"></div>
           </div>
           <canvas id="wch-simulation" oncontextmenu="event.preventDefault()"></canvas>
         </div>
-        <div class="large-4 cell">
-
+        <div class="large-5 cell">
           <ul id="wch-control-panel" class="tabs" data-tabs>
             <li class="tabs-title is-active"><a href="#wch-controlpanel">Control Panel</a></li>
             <li class="tabs-title"><a href="#wch-outputpanel">Output Console</a></li>
           </ul>
-
           <div class="tabs-content" data-tabs-content="wch-control-panel">
             <div id="wch-controlpanel" class="tabs-panel is-active">
               <form>
@@ -170,7 +168,7 @@
         }
 
         commandSubmit.onclick = function(event) {
-          
+
         }
 
       })(WCH);
