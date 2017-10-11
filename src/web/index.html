@@ -137,6 +137,26 @@
             this.totalDependencies = Math.max(this.totalDependencies, left);
             Module.setStatus(left ? 'Preparing... (' + (this.totalDependencies-left) + '/' + this.totalDependencies + ')' : 'All downloads complete.');
           },
+          'onSimulationInitialized': function(luaStatePtr) {
+
+            play.onclick = function(event) {
+              if (Module['simulation_start']) Module['simulation_start'](luaStatePtr);
+            };
+
+            stop.onclick = function(event) {
+              if (Module['simulation_stop']) Module['simulation_stop'](luaStatePtr);
+            };
+
+            pause.onclick = function(event) {
+              if (Module['simulation_pause']) Module['simulation_pause'](luaStatePtr);
+            };
+
+            outputRefresh.onclick = function(event) {
+            };
+
+            commandSubmit.onclick = function(event) {
+            };
+          }
         };
 
         Module.setStatus('Downloading...');
@@ -148,28 +168,7 @@
           };
         };
 
-        play.onclick = function(event) {
-          // TASK
-          //  If simulation is running already send a stop command to the
-          //  C implementation for graceful shutdown.
-          wch(Module);
-        };
-
-        stop.onclick = function(event) {
-
-        }
-
-        pause.onclick = function(event) {
-
-        }
-
-        outputRefresh.onclick = function(event) {
-
-        }
-
-        commandSubmit.onclick = function(event) {
-
-        }
+        wch(Module);
 
       })(WCH);
     </script>

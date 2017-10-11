@@ -78,8 +78,52 @@ static void engine_em_update(void* data){
 	lua_call(L, 0, 0);
 }
 
-static int engine_run(lua_State* L) {
+void engine_em_start(lua_State* L) {
+	lua_getglobal(L, "onstart");
+	if (lua_isfunction(L, -1)) {
+		lua_call(L, 0, 0);
+			
+	} else {
+		lua_pop(L, 1);
+	}
 	emscripten_set_main_loop_arg(engine_em_update, L, 0, 0);
+}
+
+void engine_em_stop(lua_State* L) {
+	lua_getglobal(L, "onstop");
+	if (lua_isfunction(L, -1)) {
+		lua_call(L, 0, 0);
+			
+	} else {
+		lua_pop(L, 1);
+	}
+}
+
+void engine_em_pause(lua_State* L) {
+	lua_getglobal(L, "onpause");
+	if (lua_isfunction(L, -1)) {
+		lua_call(L, 0, 0);
+			
+	} else {
+		lua_pop(L, 1);
+	}
+}
+
+static int engine_run(lua_State* L) {
+	// Register all exposed functions to the browser context.
+	// These must all correspond to what is passed at build-
+	// time to "-s EXPORTED_FUNCTIONS[...]" in order to be
+	// useful. In addition, -s NO_EXIT_RUNTIME=1 is required
+	// since the engine must persist after main returns.
+
+	EM_ASM_({
+			Module['simulation_start'] = Module.cwrap('engine_em_start', null, ['number']);
+			Module['simulation_stop'] = Module.cwrap('engine_em_stop', null, ['number']);
+			Module['simulation_pause'] = Module.cwrap('engine_em_pause', null, ['number']);
+			if (Module['onSimulationInitialized']) Module['onSimulationInitialized']($0);
+			
+		}, (unsigned long int)L);
+	
 	return 0;
 }
 
