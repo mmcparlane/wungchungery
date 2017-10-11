@@ -22,26 +22,37 @@
         <div class="large-4 cell">
 
           <ul id="wch-control-panel" class="tabs" data-tabs>
-            <li class="tabs-title is-active"><a href="#commandpanel">Commands</a></li>
-            <li class="tabs-title"><a href="#outputpanel">Output console</a></li>
+            <li class="tabs-title is-active"><a href="#wch-controlpanel">Control Panel</a></li>
+            <li class="tabs-title"><a href="#wch-outputpanel">Output Console</a></li>
           </ul>
 
           <div class="tabs-content" data-tabs-content="wch-control-panel">
-            <div id="commandpanel" class="tabs-panel is-active">
-                <div class="button-group">
-                    <a id="wch-start" href="#" class="button"><i class="fi-play"></i></a>
-                    <a id="wch-stop" href="#" class="button"><i class="fi-stop"></i></a>
-                    <a id="wch-pause" href="#" class="button"><i class="fi-pause"></i></a>
-                </div>
-                <textarea id="wch-command" placeholder="Enter a command..."></textarea>
-                <div class="button-group">
-                    <a id="wch-execute" href="#" class="button">Execute</a>
-                </div>
+            <div id="wch-controlpanel" class="tabs-panel is-active">
+              <form>
+                <fieldset class="fieldset">
+                    <legend>command prompt</legend>
+                    <textarea id="wch-command" placeholder="Enter some commands..."></textarea>
+                    <div class="button-group">
+                        <a id="wch-execute" href="#" class="button">Submit</a>
+                    </div>
+                </fieldset>
+
+                <fieldset class="fieldset">
+                  <legend>simulation controls</legend>
+                    <div class="button-group">
+                        <a id="wch-start" href="#" class="button"><i class="fi-play"></i></a>
+                        <a id="wch-stop" href="#" class="button"><i class="fi-stop"></i></a>
+                        <a id="wch-pause" href="#" class="button"><i class="fi-pause"></i></a>
+                    </div>
+                </fieldset>
+              </form>
             </div>
-            <div id="outputpanel" class="tabs-panel">
+            <div id="wch-outputpanel" class="tabs-panel">
                 <label>
-                  <p>Output console</p>
                   <textarea id="wch-output" rows="10"></textarea>
+                  <div class="button-group">
+                      <a id="wch-start" href="#" class="button"><i class="fi-refresh"></i></a>
+                  </div>
                 </label>
             </div>
           </div>
