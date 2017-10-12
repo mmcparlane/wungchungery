@@ -28,7 +28,7 @@
             <div id="wch-controlpanel" class="tabs-panel is-active">
               <form>
                 <fieldset class="fieldset">
-                    <legend>command prompt</legend>
+                    <legend>command notepad</legend>
                     <textarea id="wch-command" placeholder="Enter some commands..."></textarea>
                     <div class="button-group">
                         <a id="wch-command-submit" href="#" class="button">Submit</a>
@@ -152,9 +152,11 @@
             };
 
             outputRefresh.onclick = function(event) {
+              if (output) output.value = '';
             };
 
             commandSubmit.onclick = function(event) {
+              if (Module['simulation_runlua']) Module['simulation_runlua'](luaStatePtr, command.value);
             };
           }
         };

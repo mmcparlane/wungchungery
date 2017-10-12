@@ -19,7 +19,7 @@ OUT_PFX = "-o "
 OUT_PFX2 = $(OUT_PFX)
 INCLUDE_PFX = -I
 LNKCMD = $(CC)
-LNKFLAGS = $(CFLAGS) -s MODULARIZE=1 -s EXPORT_NAME="'WCH'" -s EXPORTED_FUNCTIONS="['_main', '_engine_em_start', '_engine_em_stop', '_engine_em_pause','_engine_em_resume']" -s NO_EXIT_RUNTIME=1
+LNKFLAGS = $(CFLAGS) -s MODULARIZE=1 -s EXPORT_NAME="'WCH'" -s EXPORTED_FUNCTIONS="['_main', '_engine_em_runlua', '_engine_em_start', '_engine_em_stop', '_engine_em_pause','_engine_em_resume']" -s NO_EXIT_RUNTIME=1
 
 !IF DEFINED(BROWSER)
 PRELOAD_TEST = --preload-file $(SCRIPT_DIR)/test
