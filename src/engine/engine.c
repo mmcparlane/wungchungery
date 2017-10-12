@@ -11,13 +11,26 @@
 #include "args.h"
 #include "fs.h"
 
+#define DBG() printf("top: %i, type: %s\n", lua_gettop(L), lua_typename(L, lua_type(L, -1)))
+
 #if defined(__EMSCRIPTEN__)
 #include <emscripten.h>
 #endif
 
+enum {
+	ENGINE_STARTED,
+	ENGINE_RUNNING,
+	ENGINE_STOPPED,
+	ENGINE_PAUSED,
+	ENGINE_RESUMED,
+};
 
 static int engine_run(lua_State* L);
 static int engine_update(lua_State* L);
+static int engine_start(lua_State* L);
+static int engine_stop(lua_State* L);
+static int engine_pause(lua_State* L);
+static int engine_resume(lua_State* L);
 static int engine_clock_now(lua_State* L);
 
 static wch_AppInfo appinfo = {
@@ -78,35 +91,46 @@ static void engine_em_update(void* data){
 	lua_call(L, 0, 0);
 }
 
+// JavaScript will trigger these.
 void engine_em_start(lua_State* L) {
-	lua_getglobal(L, "onstart");
-	if (lua_isfunction(L, -1)) {
-		lua_call(L, 0, 0);
-			
-	} else {
-		lua_pop(L, 1);
-	}
-	emscripten_set_main_loop_arg(engine_em_update, L, 0, 0);
+	lua_pushcfunction(L, engine_start);
+	lua_call(L, 0, 0);
 }
 
 void engine_em_stop(lua_State* L) {
-	lua_getglobal(L, "onstop");
-	if (lua_isfunction(L, -1)) {
-		lua_call(L, 0, 0);
-			
-	} else {
-		lua_pop(L, 1);
-	}
+	lua_pushcfunction(L, engine_stop);
+	lua_call(L, 0, 0);
 }
 
 void engine_em_pause(lua_State* L) {
-	lua_getglobal(L, "onpause");
-	if (lua_isfunction(L, -1)) {
-		lua_call(L, 0, 0);
-			
-	} else {
-		lua_pop(L, 1);
-	}
+	lua_pushcfunction(L, engine_pause);
+	lua_call(L, 0, 0);
+}
+
+void engine_em_resume(lua_State* L) {
+	lua_pushcfunction(L, engine_resume);
+	lua_call(L, 0, 0);
+}
+
+// Main loop will trigger these.
+static int engine_onstarted(lua_State* L) {
+	emscripten_set_main_loop_arg(engine_em_update, L, 0, 0);
+	return 0;
+}
+
+static int engine_onstopped(lua_State* L) {
+	emscripten_cancel_main_loop();
+	return 0;
+}
+
+static int engine_onpaused(lua_State* L) {
+	emscripten_pause_main_loop();
+	return 0;
+}
+
+static int engine_onresumed(lua_State* L) {
+	emscripten_resume_main_loop();
+	return 0;
 }
 
 static int engine_run(lua_State* L) {
@@ -120,6 +144,7 @@ static int engine_run(lua_State* L) {
 			Module['simulation_start'] = Module.cwrap('engine_em_start', null, ['number']);
 			Module['simulation_stop'] = Module.cwrap('engine_em_stop', null, ['number']);
 			Module['simulation_pause'] = Module.cwrap('engine_em_pause', null, ['number']);
+			Module['simulation_resume'] = Module.cwrap('engine_em_resume', null, ['number']);
 			if (Module['onSimulationInitialized']) Module['onSimulationInitialized']($0);
 			
 		}, (unsigned long int)L);
@@ -140,11 +165,130 @@ static int engine_run(lua_State* L) {
 	exit(EXIT_FAILURE);
 	return 0;
 }
+static int engine_onstarted(lua_State* L) {
+	// Not implemented.
+	exit(EXIT_FAILURE);
+	return 0;
+}
+
+static int engine_onstopped(lua_State* L) {
+	// Not implemented.
+	exit(EXIT_FAILURE);
+	return 0;
+}
+
+static int engine_onpaused(lua_State* L) {
+	// Not implemented.
+	exit(EXIT_FAILURE);
+	return 0;
+}
+
+static int engine_onresumed(lua_State* L) {
+	// Not implemented.
+	exit(EXIT_FAILURE);
+	return 0;
+}
 #endif
 
 
+static int engine_start(lua_State* L) {
+	lua_getglobal(L, "onstart");
+	if (lua_isfunction(L, -1)) {
+		lua_call(L, 0, 0);
+			
+	} else {
+		lua_pop(L, 1);
+	}
+	lua_pushcfunction(L, engine_onstarted);
+	lua_call(L, 0, 0);
+	
+	lua_getglobal(L, "engine");
+	lua_pushinteger(L, ENGINE_STARTED);
+	lua_setfield(L, -2, "state");
+	return 0;
+}
+
+static int engine_stop(lua_State* L) {
+	lua_getglobal(L, "onstop");
+	if (lua_isfunction(L, -1)) {
+		lua_call(L, 0, 0);
+			
+	} else {
+		lua_pop(L, 1);
+	}
+	lua_getglobal(L, "engine");
+        lua_pushinteger(L, ENGINE_STOPPED);
+	lua_setfield(L, -2, "state");	
+	return 0;
+}
+
+static int engine_pause(lua_State* L) {
+	lua_getglobal(L, "onpause");
+	if (lua_isfunction(L, -1)) {
+		lua_call(L, 0, 0);
+			
+	} else {
+		lua_pop(L, 1);
+	}
+	lua_getglobal(L, "engine");
+	lua_pushinteger(L, ENGINE_PAUSED);
+	lua_setfield(L, -2, "state");
+	return 0;
+}
+
+static int engine_resume(lua_State* L) {
+	lua_getglobal(L, "onresume");
+	if (lua_isfunction(L, -1)) {
+		lua_call(L, 0, 0);
+			
+	} else {
+		lua_pop(L, 1);
+	}
+	lua_getglobal(L, "engine");
+	lua_pushinteger(L, ENGINE_RESUMED);
+	lua_setfield(L, -2, "state");	
+	return 0;
+}
+
 static int engine_update(lua_State* L) {
 	lua_Number lag, now, before, gap, interval;
+
+	lua_getglobal(L, "engine");
+	lua_getfield(L, -1, "state");
+	switch(lua_tointeger(L, -1)) {
+	case ENGINE_STARTED:
+		//  Update 'before' time
+		lua_pushcfunction(L, engine_clock_now);
+		lua_call(L, 0, 1);
+	        lua_copy(L, -1, lua_upvalueindex(3));
+		lua_pop(L, 1);
+		
+		lua_pushinteger(L, ENGINE_RUNNING);
+		lua_setfield(L, -3, "state");
+		break;
+		
+	case ENGINE_STOPPED:
+		lua_pushcfunction(L, engine_onstopped);
+		lua_call(L, 0, 0);
+		break;
+		
+	case ENGINE_PAUSED:
+		lua_pushcfunction(L, engine_onpaused);
+		lua_call(L, 0, 0);		
+		break;
+		
+	case ENGINE_RESUMED:
+		lua_pushcfunction(L, engine_onresumed);
+		lua_call(L, 0, 0);
+		
+		//  Update 'before' time
+		lua_pushcfunction(L, engine_clock_now);
+		lua_call(L, 0, 1);
+	        lua_copy(L, -1, lua_upvalueindex(3));
+		lua_pop(L, 1);
+		break;		
+	}
+	lua_pop(L, 2);
 
 	interval = lua_tonumber(L, lua_upvalueindex(1));
 	lag = lua_tonumber(L, lua_upvalueindex(2));
@@ -153,7 +297,7 @@ static int engine_update(lua_State* L) {
 	lua_pushcfunction(L, engine_clock_now);
 	lua_call(L, 0, 1);
 	
-	now = luaL_checknumber(L, 1);
+	now = luaL_checknumber(L, -1);
 	gap = now - before;
 	
 	lag += gap;
@@ -210,7 +354,28 @@ static lua_State* initialize() {
 	luaL_openlibs(L);
 
 	// Add engine lib
-	luaL_newlib(L, engine_lib);	
+	luaL_newlib(L, engine_lib);
+
+	// ... Add engine states
+	lua_pushinteger(L, ENGINE_STARTED);
+	lua_setfield(L, -2, "STARTED");
+
+	lua_pushinteger(L, ENGINE_RUNNING);
+	lua_setfield(L, -2, "RUNNING");
+	
+	lua_pushinteger(L, ENGINE_STOPPED);
+	lua_setfield(L, -2, "STOPPED");
+
+	lua_pushinteger(L, ENGINE_PAUSED);
+	lua_setfield(L, -2, "PAUSED");
+
+	lua_pushinteger(L, ENGINE_RESUMED);
+	lua_setfield(L, -2, "RESUMED");
+
+	// ... Set default engine state
+	lua_pushinteger(L, ENGINE_STOPPED);
+	lua_setfield(L, -2, "state");	
+	
 	lua_setglobal(L, "engine");
 
 	// Add filesystem lib
@@ -302,7 +467,7 @@ static int run(lua_State* L) {
 
 }
 
-int engine_start(int argc, const char* argv[]) {
+int engine_main(int argc, const char* argv[]) {
 
 	appinfo.cmdname = argv[0];
 

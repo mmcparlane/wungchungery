@@ -12,3 +12,14 @@ function onrender(frameratio)
    print("render "..frameratio)
 end
 
+function onstart()
+   print("onstart")
+end
+
+function onstop()
+   print("onstop")
+end
+
+function onpause()
+   print("onpause")
+end

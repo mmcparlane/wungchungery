@@ -2,8 +2,8 @@
 // Copyright © Mason McParlane
 //
 
-extern int engine_start(int argc, char* argv[]);
+extern int engine_main(int argc, char* argv[]);
 
 int main(int argc, char* argv[]) {
-	return engine_start(argc, argv);
+	return engine_main(argc, argv);
 }
