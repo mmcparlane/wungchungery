@@ -69,17 +69,23 @@ static const wch_ArgInfo arginfo[] = {
 
 
 #if defined(__EMSCRIPTEN__)
+
+#if defined(WCH_BROWSER)
 static int engine_clock_now(lua_State* L) {
-	lua_Number now = EM_ASM_DOUBLE_V(
-		if (ENVIRONMENT_IS_NODE) {
-			var t = process.hrtime();
-			return (t[0]*1e9 + t[1])/1e6;
-		} else {
-			return performance.now();
-		});
+	lua_Number now = EM_ASM_DOUBLE_V(return performance.now());
 	lua_pushnumber(L, now);
 	return 1;
 }
+#else
+static int engine_clock_now(lua_State* L) {
+	lua_Number now = EM_ASM_DOUBLE_V(
+		var t = process.hrtime();
+		return (t[0]*1e9 + t[1])/1e6;
+	);
+	lua_pushnumber(L, now);
+	return 1;
+}
+#endif
 
 static void engine_em_update(void* data){
 	lua_State* L = (lua_State*)(data);

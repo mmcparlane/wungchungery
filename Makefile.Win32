@@ -5,14 +5,20 @@
 BUILD_DIR = build
 SRC_DIR = src
 SCRIPT_DIR = scripts
+WEB_SRC_DIR = $(SRC_DIR)\web
+TEST_SRC_DIR = $(SRC_DIR)\test
+ENGINE_SRC_DIR = $(SRC_DIR)\engine
+LUA_SRC_DIR = libs\lua\lua-5.3.4\src
+
 
 !IF DEFINED(EMSCRIPTEN)
+CFLAGS = 
 
 !IF DEFINED(RELEASE)
-CFLAGS = $(CFLAGS) -O3 --closure 1
+CFLAGS = $(CFLAGS) -O3
 !ENDIF
+
 CC = emcc
-CFLAGS = 
 OBJ_EXT = bc
 EXE_EXT = js
 OUT_PFX = "-o "
@@ -22,6 +28,7 @@ LNKCMD = $(CC)
 LNKFLAGS = $(CFLAGS) -s MODULARIZE=1 -s EXPORT_NAME="'WCH'" -s EXPORTED_FUNCTIONS="['_main', '_engine_em_runlua', '_engine_em_start', '_engine_em_stop', '_engine_em_pause','_engine_em_resume']" -s NO_EXIT_RUNTIME=1
 
 !IF DEFINED(BROWSER)
+CFLAGS = $(CFLAGS) -DWCH_BROWSER
 PRELOAD_TEST = --preload-file $(SCRIPT_DIR)/test
 PRELOAD_ENGINE = --preload-file $(SCRIPT_DIR)/engine
 !ENDIF
@@ -36,26 +43,21 @@ INCLUDE_PFX = /I
 LNKCMD = link
 LNKFLAGS =
 NOLINKFLAG = /c
-
 !ENDIF
 
-WEB_SRC_DIR = $(SRC_DIR)\web
 WEB_OBJ_DIR = $(BUILD_DIR)
 WEB_OBJS = $(WEB_SRC_DIR)\index.html \
 	   $(WEB_SRC_DIR)\js \
 	   $(WEB_SRC_DIR)\css
 
-TEST_SRC_DIR = $(SRC_DIR)\test
 TEST_OBJ_DIR = $(BUILD_DIR)\test
 TEST_OBJS = $(TEST_OBJ_DIR)\test.$(OBJ_EXT)
 
-ENGINE_SRC_DIR = $(SRC_DIR)\engine
 ENGINE_OBJ_DIR = $(BUILD_DIR)\engine
 ENGINE_OBJS = $(ENGINE_OBJ_DIR)\args.$(OBJ_EXT) \
 	      $(ENGINE_OBJ_DIR)\fs.$(OBJ_EXT) \
 	      $(ENGINE_OBJ_DIR)\engine.$(OBJ_EXT)
 
-LUA_SRC_DIR = libs\lua\lua-5.3.4\src
 LUA_OBJ_DIR = $(BUILD_DIR)\lua
 LUA_OBJS = $(LUA_OBJ_DIR)\lapi.$(OBJ_EXT) \
 	   $(LUA_OBJ_DIR)\lcode.$(OBJ_EXT) \
@@ -102,7 +104,7 @@ web:
 	powershell -Command "'$(WEB_OBJS)' -split '\s+'| foreach {cp -Path $$_ -Destination $(WEB_OBJ_DIR) -Recurse -Force}"
 
 clean:
-	powershell -Command "rm $(BUILD_DIR)\* -Recurse"
+	powershell -Command "if (Test-Path $(BUILD_DIR)) {rm $(BUILD_DIR)\* -Recurse; }"
 
 rebuild: clean all
 

@@ -1,6 +1,18 @@
 //
 // Copyright © Mason McParlane
 //
+// NOTE:
+//  This file uses various Emscripten FS object functions but currently
+//  this does not work with the "--closure 1" optimization setting. Fur-
+//  ther research needs to be done in order to get these working. Some
+//  possibilities include:
+//    1) Use -s EXPORTED_RUNTIME_METHODS or -s EXTRA_EXPORTED_RUNTIME_METHODS
+//       to prevent closure from mangling the FS object.
+//    2) Expose FS to this library via JavaScript hook. Using cwrap a callback
+//       to C code can be exposed which allows JavaScript to send a reference
+//       to the FS object.
+//    3) Use a Posix C library that has a compatible Emscripten implementation.
+//    4) Delete this library and pass all files in on the command-line.
 
 #include "lua.h"
 #include "lauxlib.h"
@@ -14,30 +26,37 @@
 
 
 #if defined(__EMSCRIPTEN__)
+
+#if defined(WCH_BROWSER)
 static int fs_mount(lua_State* L) {
 	const char* real = luaL_checkstring(L, 1);
 	const char* virt = luaL_checkstring(L, 2);
 
-	// TASK
-	//  Ensure the directory was *actually* mounted
-	//  before returning. Typically though it should
-	//  throw an error if an issue arises but guarantees
-	//  would be better...
+	// In the browser there is no difference between a real
+	// and a virtual filesystem. The MEMFS is used and all
+	// files are preloaded via the emcc --preload-file switch.
+	lua_pushstring(L, real);
+	
+	return 1;
+}
+#else
+static int fs_mount(lua_State* L) {
+	const char* real = luaL_checkstring(L, 1);
+	const char* virt = luaL_checkstring(L, 2);
+
 	lua_pushfstring(L,
 			"(function(real, virt) {"
-			"    if (ENVIRONMENT_IS_NODE) {"
 			"        FS.mkdir(virt);"
 			"        FS.mount(NODEFS, {root: real}, virt);"
 			"        return virt;"
-			"    } else {"
-			"        return real;"
-			"    }"
 			" })('%s', '%s')", real, virt);
 
 	lua_pushstring(L, emscripten_run_script_string(lua_tostring(L, -1)));
 	
 	return 1;
 }
+#endif
+
 
 static int fs_unmount(lua_State* L) {
 	const char* virt = luaL_checkstring(L, 1);
