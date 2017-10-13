@@ -138,17 +138,22 @@
             Module.setStatus(left ? 'Preparing... (' + (this.totalDependencies-left) + '/' + this.totalDependencies + ')' : 'All downloads complete.');
           },
           'onSimulationInitialized': function(luaStatePtr) {
+            var sim_runlua = Module.cwrap('engine_em_runlua', null, ['number', 'string']);
+			      var sim_start = Module.cwrap('engine_em_start', null, ['number']);
+			      var sim_stop = Module.cwrap('engine_em_stop', null, ['number']);
+			      var sim_pause = Module.cwrap('engine_em_pause', null, ['number']);
+			      var sim_resume = Module.cwrap('engine_em_resume', null, ['number']);
 
             play.onclick = function(event) {
-              if (Module['simulation_start']) Module['simulation_start'](luaStatePtr);
+              if (sim_start) sim_start(luaStatePtr);
             };
 
             stop.onclick = function(event) {
-              if (Module['simulation_stop']) Module['simulation_stop'](luaStatePtr);
+              if (sim_stop) sim_stop(luaStatePtr);
             };
 
             pause.onclick = function(event) {
-              if (Module['simulation_pause']) Module['simulation_pause'](luaStatePtr);
+              if (sim_pause) sim_pause(luaStatePtr);
             };
 
             outputRefresh.onclick = function(event) {
@@ -156,7 +161,7 @@
             };
 
             commandSubmit.onclick = function(event) {
-              if (Module['simulation_runlua']) Module['simulation_runlua'](luaStatePtr, command.value);
+              if (sim_runlua) sim_runlua(luaStatePtr, command.value);
             };
           }
         };

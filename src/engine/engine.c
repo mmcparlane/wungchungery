@@ -98,7 +98,7 @@ static void engine_em_update(void* data){
 }
 
 // JavaScript will trigger these.
-void engine_em_runlua(lua_State* L, const char* chunk) {
+EMSCRIPTEN_KEEPALIVE void engine_em_runlua(lua_State* L, const char* chunk) {
 	int err = luaL_loadstring(L, chunk);
 	if (err) {
 		fprintf(stderr, "%s\n", lua_tostring(L, -1));
@@ -109,40 +109,29 @@ void engine_em_runlua(lua_State* L, const char* chunk) {
 	}
 }
 
-void engine_em_start(lua_State* L) {
+EMSCRIPTEN_KEEPALIVE void engine_em_start(lua_State* L) {
 	lua_pushcfunction(L, engine_start);
 	lua_call(L, 0, 0);
 }
 
-void engine_em_stop(lua_State* L) {
+EMSCRIPTEN_KEEPALIVE void engine_em_stop(lua_State* L) {
 	lua_pushcfunction(L, engine_stop);
 	lua_call(L, 0, 0);
 }
 
-void engine_em_pause(lua_State* L) {
+EMSCRIPTEN_KEEPALIVE void engine_em_pause(lua_State* L) {
 	lua_pushcfunction(L, engine_pause);
 	lua_call(L, 0, 0);
 }
 
-void engine_em_resume(lua_State* L) {
+EMSCRIPTEN_KEEPALIVE void engine_em_resume(lua_State* L) {
 	lua_pushcfunction(L, engine_resume);
 	lua_call(L, 0, 0);
 }
 
 static int engine_run(lua_State* L) {
-	// Register all exposed functions to the JavaScript context.
-	// These must all correspond to what is passed at build-
-	// time to "-s EXPORTED_FUNCTIONS[...]" in order to be
-	// useful. In addition, -s NO_EXIT_RUNTIME=1 is required
-	// since the engine must persist after main returns.
-
-	EM_ASM_({
-			Module['simulation_runlua'] = Module.cwrap('engine_em_runlua', null, ['number', 'string']);
-			Module['simulation_start'] = Module.cwrap('engine_em_start', null, ['number']);
-			Module['simulation_stop'] = Module.cwrap('engine_em_stop', null, ['number']);
-			Module['simulation_pause'] = Module.cwrap('engine_em_pause', null, ['number']);
-			Module['simulation_resume'] = Module.cwrap('engine_em_resume', null, ['number']);
-			if (Module['onSimulationInitialized']) Module['onSimulationInitialized']($0);
+	EM_ASM_({if (Module['onSimulationInitialized'])
+				Module['onSimulationInitialized']($0);
 			
 		}, (unsigned long int)L);
 	
