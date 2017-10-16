@@ -12,10 +12,10 @@ LUA_SRC_DIR = libs\lua\lua-5.3.4\src
 
 
 !IF DEFINED(EMSCRIPTEN)
-CFLAGS = 
+CFLAGS = --js-library $(ENGINE_SRC_DIR)\fs.js
 
 !IF DEFINED(RELEASE)
-CFLAGS = $(CFLAGS) -O3
+CFLAGS = $(CFLAGS) -O3 --closure 1
 !ENDIF
 
 CC = emcc

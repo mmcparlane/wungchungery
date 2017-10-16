@@ -1,31 +1,21 @@
 //
 // Copyright © Mason McParlane
 //
-// NOTE:
-//  This file uses various Emscripten FS object functions but currently
-//  this does not work with the "--closure 1" optimization setting. Fur-
-//  ther research needs to be done in order to get these working. Some
-//  possibilities include:
-//    1) Use -s EXPORTED_RUNTIME_METHODS or -s EXTRA_EXPORTED_RUNTIME_METHODS
-//       to prevent closure from mangling the FS object.
-//    2) Expose FS to this library via JavaScript hook. Using cwrap a callback
-//       to C code can be exposed which allows JavaScript to send a reference
-//       to the FS object.
-//    3) Use a Posix C library that has a compatible Emscripten implementation.
-//    4) Delete this library and pass all files in on the command-line.
 
+#include <stdlib.h>
 #include "lua.h"
 #include "lauxlib.h"
 #include "lualib.h"
 
-#define DBG() printf("top: %i, type: %s\n", lua_gettop(L), lua_typename(L, lua_type(L, -1)))
-
 #if defined(__EMSCRIPTEN__)
 #include <emscripten.h>
-#endif
 
-
-#if defined(__EMSCRIPTEN__)
+// Helper functions defined in fs.js
+extern const char* wch_fs_mount(const char* real, const char* virt);
+extern void wch_fs_unmount(const char* path);
+extern void wch_fs_mkdir(const char* path);
+extern char* wch_fs_ls(const char* path, const char* type);
+extern char* wch_fs_pwd(void);
 
 #if defined(WCH_BROWSER)
 static int fs_mount(lua_State* L) {
@@ -39,20 +29,12 @@ static int fs_mount(lua_State* L) {
 	
 	return 1;
 }
+
 #else
 static int fs_mount(lua_State* L) {
 	const char* real = luaL_checkstring(L, 1);
 	const char* virt = luaL_checkstring(L, 2);
-
-	lua_pushfstring(L,
-			"(function(real, virt) {"
-			"        FS.mkdir(virt);"
-			"        FS.mount(NODEFS, {root: real}, virt);"
-			"        return virt;"
-			" })('%s', '%s')", real, virt);
-
-	lua_pushstring(L, emscripten_run_script_string(lua_tostring(L, -1)));
-	
+	lua_pushstring(L, wch_fs_mount(real, virt));
 	return 1;
 }
 #endif
@@ -60,23 +42,13 @@ static int fs_mount(lua_State* L) {
 
 static int fs_unmount(lua_State* L) {
 	const char* virt = luaL_checkstring(L, 1);
-
-	lua_pushfstring(L,
-			"(function(virt) {"
-			"    FS.unmount(virt);"
-			"})('%s')", virt);
-
-	emscripten_run_script(lua_tostring(L, -1));
-	
+        wch_fs_unmount(virt);
 	return 0;
 }
 
 static int fs_mkdir(lua_State* L) {
 	const char* path = luaL_checkstring(L, 1);
-
-	lua_pushfstring(L,"(function(path){FS.mkdir(path);})('%s')", path);
-	emscripten_run_script(lua_tostring(L, -1));
-	
+        wch_fs_mkdir(path);
 	return 0;
 }
 
@@ -93,48 +65,20 @@ static int fs_ls(lua_State* L) {
 	int ifiles = 0, iresult = 0, iiter = 0;
 	const char* path = luaL_gsub(L, luaL_checkstring(L, 1), "\\", "/");
 	const char* type = "all";
+	char* files = NULL;
 	if (lua_isstring(L, 2)) type = lua_tostring(L, 2);
 
-	lua_pushfstring(
-		L,
-		"(function(path, type) {"
-		"    var r = [];"
-		"    FS.readdir(path).forEach("
-		"        function(file) {"
-		"            if (file === '.' || file === '..') return;"
-		"            file = (path.endsWith('/') ? path : path + '/') + file;"
-		"            var s = FS.stat(file);"
-		"            if (s) {"
-		"                switch(type) {"
-		"                case 'dir':"
-		"                    if (FS.isDir(s.mode)) r.push(file);"
-		"                    break;"
-		"                case 'file':"
-		"                    if (FS.isFile(s.mode)) r.push(file);"
-		"                    break;"
-		"                case 'all':"
-		"                    r.push(file);"
-		"                    break;"
-		"                default:"
-		"                    throw new Error('ls: unsupported file type \"' + type + '\" specified');"
-		"                    break;"
-		"               }"
-		"            }"
-		"        });"
-		"    return r.join('\\n').concat('\\n');"
-		" })('%s', '%s')", path, type);
-
-	ifiles = lua_gettop(L);
+	files = wch_fs_ls(path, type);
 	
 	lua_newtable(L);
 	iresult = lua_gettop(L);
 	
 	lua_getglobal(L, "string");
 	lua_getfield(L, -1, "gmatch");
-        lua_pushstring(L, emscripten_run_script_string(lua_tostring(L, ifiles)));
-
+        lua_pushstring(L, files);
 	lua_pushstring(L, "[%S ]+");
 	lua_call(L, 2, 1);
+
 	iiter = lua_gettop(L);
 
 	// for f in iter do r[#r + 1] = f end
@@ -148,13 +92,14 @@ static int fs_ls(lua_State* L) {
 	}
 
 	lua_pushvalue(L, iresult);
+
+	free(files);
 	
 	return 1;
 }
 
 static int fs_pwd(lua_State* L) {
-	lua_pushstring(L, emscripten_run_script_string("FS.cwd()"));
-
+	lua_pushstring(L, wch_fs_pwd());
 	return 1;
 }
 
