@@ -10,8 +10,7 @@
 #include "lualib.h"
 #include "args.h"
 #include "fs.h"
-
-#define DBG() printf("top: %i, type: %s\n", lua_gettop(L), lua_typename(L, lua_type(L, -1)))
+#include "gfx.h"
 
 #if defined(__EMSCRIPTEN__)
 #include <emscripten.h>
@@ -381,11 +380,18 @@ static lua_State* initialize() {
 	lua_setfield(L, -2, "state");	
 	
 	lua_setglobal(L, "engine");
-
+	
 	// Add filesystem lib
 	lua_pushcfunction(L, luaopen_fs);
 	lua_call(L, 0, 1);
 	lua_setglobal(L, "fs");
+
+	// Add gfx lib
+	lua_pushcfunction(L, luaopen_gfx);
+	lua_call(L, 0, 1);
+	lua_getfield(L, -1, "initialize");
+	lua_call(L, 0, 0);
+	lua_setglobal(L, "gfx");
 
 	return L;
 }

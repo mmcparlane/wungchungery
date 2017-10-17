@@ -56,7 +56,8 @@ TEST_OBJS = $(TEST_OBJ_DIR)\test.$(OBJ_EXT)
 ENGINE_OBJ_DIR = $(BUILD_DIR)\engine
 ENGINE_OBJS = $(ENGINE_OBJ_DIR)\args.$(OBJ_EXT) \
 	      $(ENGINE_OBJ_DIR)\fs.$(OBJ_EXT) \
-	      $(ENGINE_OBJ_DIR)\engine.$(OBJ_EXT)
+	      $(ENGINE_OBJ_DIR)\engine.$(OBJ_EXT) \
+	      $(ENGINE_OBJ_DIR)\gfx.$(OBJ_EXT)
 
 LUA_OBJ_DIR = $(BUILD_DIR)\lua
 LUA_OBJS = $(LUA_OBJ_DIR)\lapi.$(OBJ_EXT) \
