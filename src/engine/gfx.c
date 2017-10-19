@@ -9,6 +9,84 @@
 #include <GLES2/gl2.h>
 #include <math.h>
 
+static int gfx_create_program(lua_State* L) {
+	int i; GLuint program; GLuint shader; GLint linked; GLint infolen; char *info = NULL;
+	int argc = lua_gettop(L);
+	
+	for (i = 1; i <= argc; ++i) {
+		luaL_argcheck(L,
+			      glIsShader((GLuint)luaL_checkinteger(L, i)),
+			      i,
+			      "is not a valid shader");
+	}
+	
+	program = glCreateProgram();
+	if (0 == program) {
+		lua_pushinteger(L, 0);
+		return 1;
+	}
+	
+	for (i = 1; i <= argc; ++i) {
+		shader = (GLuint)lua_tointeger(L, i);		
+		glAttachShader(program, shader);
+	}
+
+	glLinkProgram(program);
+	glGetProgramiv(program, GL_LINK_STATUS, &linked);
+
+	if (! linked) {
+		infolen = 0;
+		glGetProgramiv(program, GL_INFO_LOG_LENGTH, &infolen);
+		if (infolen > 1) {
+			info = lua_newuserdata(L, sizeof(char)*infolen);
+			glGetProgramInfoLog(program, infolen, NULL, info);
+		        fprintf(stderr, "gfx_create_program: Error '%s' occurred during linking.", info);
+		}
+		glDeleteProgram(program);
+		lua_pushinteger(L, 0);
+		return 1;
+	}
+
+	lua_pushinteger(L, program);
+	return 1;
+}
+
+static int gfx_load_shader(lua_State* L) {
+	GLenum type = (GLenum)luaL_checkinteger(L, 1);
+	const char* src = luaL_checkstring(L, 2);
+	GLuint shader;
+	GLint compiled;
+
+	shader = glCreateShader(type);
+	if (0 == shader) {
+		lua_pushinteger(L, 0);
+		return 1;
+	}
+
+	glShaderSource(shader, 1, &src, NULL);
+	glCompileShader(shader);
+
+	glGetShaderiv(shader, GL_COMPILE_STATUS, &compiled);
+
+	if (! compiled) {
+		GLint infolen = 0;
+
+		glGetShaderiv(shader, GL_INFO_LOG_LENGTH, &infolen);
+		if (infolen > 1) {
+			char* info = lua_newuserdata(L, sizeof(char)*infolen);
+
+			glGetShaderInfoLog(shader, infolen, NULL, info);
+			fprintf(stderr, "gfx_load_shader: Error '%s' occurred during compilation.", info);
+		}
+		glDeleteShader(shader);
+		lua_pushinteger(L, 0);
+		return 1;
+	}
+	
+	lua_pushinteger(L, shader);
+	return 1;
+}
+
 #if defined(__EMSCRIPTEN__)
 #include <emscripten.h>
 #include <emscripten/html5.h>
@@ -80,9 +158,21 @@ static int gfx_initialize(lua_State* L) {
 	return 0;
 }
 
+static int gfx_canvas_size(lua_State* L) {
+	int w, h;
+	emscripten_get_canvas_element_size(0, &w, &h);
+	lua_pushinteger(L, w);
+	lua_pushinteger(L, h);
+	return 2;
+}
+
 #else
 static int gfx_initialize(lua_State* L) {
-	//Not implemented
+	exit(EXIT_FAILURE);
+	return 0;
+}
+
+static int gfx_canvas_size(lua_State* L) {
 	exit(EXIT_FAILURE);
 	return 0;
 }
@@ -91,10 +181,31 @@ static int gfx_initialize(lua_State* L) {
 
 static const luaL_Reg gfx_lib[] = {
 	{"initialize", gfx_initialize},
+	{"canvas_size", gfx_canvas_size},
+	{"load_shader", gfx_load_shader},
+	{"create_program", gfx_create_program},
 	{NULL, NULL},
 };
 
+typedef struct GLEnumInfo GLEnumInfo;
+struct GLEnumInfo {
+	const char* name;
+	const GLenum value;
+};
+
+static const GLEnumInfo glenums[] = {
+	{"GL_VERTEX_SHADER", GL_VERTEX_SHADER},
+	{"GL_FRAGMENT_SHADER", GL_FRAGMENT_SHADER},
+};
+
 int luaopen_gfx(lua_State* L) {
+	int i; int len;
+	
 	luaL_newlib(L, gfx_lib);
+	
+	for (i = 0, len = sizeof(glenums)/sizeof(glenums[0]); i < len; ++i) {
+		lua_pushinteger(L, glenums[i].value);
+		lua_setfield(L, -2, glenums[i].name);
+	}
 	return 1;
 }
