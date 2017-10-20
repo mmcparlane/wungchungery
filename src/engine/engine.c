@@ -12,6 +12,8 @@
 #include "fs.h"
 #include "gfx.h"
 
+#define DBG() printf("top: '%d', type: '%s'\n", lua_gettop(L), lua_typename(L, lua_type(L, -1)))
+
 #if defined(__EMSCRIPTEN__)
 #include <emscripten.h>
 #endif
@@ -438,13 +440,13 @@ static int run(lua_State* L) {
 			err = luaL_loadfile(L, lua_tostring(L, -1));
 			if (err) {
 				fprintf(stderr, "%s\n", lua_tostring(L, -1));
+				lua_pop(L, 1); /* error */
 				
 			} else {
 				err = lua_pcall(L, 0, 0, 0);
 			        if (err) fprintf(stderr, "Error: %s\n", lua_tostring(L, -1));
 			}
-
-			lua_pop(L, 1);
+			lua_pop(L, 1); /* value */
 		}
 
 		// Initialize modules now that scripts have been loaded.
