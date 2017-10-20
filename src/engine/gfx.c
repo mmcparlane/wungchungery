@@ -190,16 +190,17 @@ static int gfx_array_new(lua_State* L) {
 			break;
 		}
 	}
-	
+
+	luaL_getmetatable(L, "wch.gfx.array");
+	lua_setmetatable(L, -2);
 	return 1;
 }
 
 static int gfx_array_get(lua_State* L) {
 	GLArray* a = NULL; int i;
-	a = lua_touserdata(L, 1);
+	a = luaL_checkudata(L, 1, "wch.gfx.array");
 	i = luaL_checkinteger(L, 2) - 1;
 
-	luaL_argcheck(L, a != NULL, 1, "'array' expected");
 	luaL_argcheck(L, 0 < i && i <= (a->len), 2, "index out of range");
 
 	switch(a->type) {
@@ -229,11 +230,10 @@ static int gfx_array_get(lua_State* L) {
 
 static int gfx_array_set(lua_State* L) {
 	GLArray* a = NULL; int i; lua_Number n;
-	a = lua_touserdata(L, 1);
+	a = luaL_checkudata(L, 1, "wch.gfx.array");
 	i = luaL_checkinteger(L, 2) - 1;
 	n = luaL_checknumber(L, 3);
 
-	luaL_argcheck(L, a != NULL, 1, "'array' expected");
 	luaL_argcheck(L, 0 <= i && i < (a->len), 2, "index out of range");
 
 	switch(a->type) {
@@ -259,6 +259,12 @@ static int gfx_array_set(lua_State* L) {
 	}
 	
 	return 0;
+}
+
+static int gfx_array_len(lua_State* L) {
+	GLArray* a = luaL_checkudata(L, 1, "wch.gfx.array");
+	lua_pushinteger(L, a->len);
+	return 1;
 }
 
 static int gfx_clear(lua_State* L) {
@@ -376,6 +382,7 @@ static const luaL_Reg gfx_array_lib[] = {
 	{"new", gfx_array_new},
 	{"get", gfx_array_get},
 	{"set", gfx_array_set},
+	{"len", gfx_array_len},
 	{NULL, NULL},
 };
 
@@ -408,6 +415,12 @@ static const GLBitfieldInfo glbitfields[] = {
 	{"STENCIL_BUFFER_BIT", GL_STENCIL_BUFFER_BIT},
 };
 
+static int luaopen_gfx_array(lua_State* L) {
+	luaL_newmetatable(L, "wch.gfx.array");
+	luaL_newlib(L, gfx_array_lib);
+	return 1;
+}
+
 int luaopen_gfx(lua_State* L) {
 	int i; int len;
 	
@@ -426,7 +439,8 @@ int luaopen_gfx(lua_State* L) {
 	}
 
 	// Add array
-	luaL_newlib(L, gfx_array_lib);
+	lua_pushcfunction(L, luaopen_gfx_array);
+	lua_call(L, 0, 1);
 	lua_setfield(L, -2, "array");
 	
 	return 1;
