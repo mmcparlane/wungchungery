@@ -261,6 +261,23 @@ static int gfx_array_set(lua_State* L) {
 	return 0;
 }
 
+static const char* gfx_array_typetostr(GLenum t) {
+	switch(t) {
+	case GL_BYTE: return "BYTE";
+	case GL_UNSIGNED_BYTE: return "UNSIGNED_BYTE";
+	case GL_SHORT: return "SHORT";
+	case GL_UNSIGNED_SHORT: return "UNSIGNED_SHORT";
+	case GL_FLOAT: return "FLOAT";
+	}
+	return "UNKNOWN TYPE";
+}
+
+static int gfx_array_tostr(lua_State* L) {
+	GLArray* a = luaL_checkudata(L, 1, "wch.gfx.array");
+	lua_pushfstring(L,"gfx.array(len: %d, type: %s)", a->len, gfx_array_typetostr(a->type));
+	return 1;
+}
+
 static int gfx_array_len(lua_State* L) {
 	GLArray* a = luaL_checkudata(L, 1, "wch.gfx.array");
 	lua_pushinteger(L, a->len);
@@ -378,13 +395,6 @@ static const luaL_Reg gfx_lib[] = {
 	{NULL, NULL},
 };
 
-static const luaL_Reg gfx_array_lib[] = {
-	{"new", gfx_array_new},
-	{"get", gfx_array_get},
-	{"set", gfx_array_set},
-	{"len", gfx_array_len},
-	{NULL, NULL},
-};
 
 typedef struct GLEnumInfo GLEnumInfo;
 typedef struct GLBitfieldInfo GLBitfieldInfo;
@@ -416,8 +426,24 @@ static const GLBitfieldInfo glbitfields[] = {
 };
 
 static int luaopen_gfx_array(lua_State* L) {
+
+	const luaL_Reg gfx_array_lib[] = {
+		{"new", gfx_array_new},
+		{NULL, NULL},
+	};
+
+	const luaL_Reg gfx_array_methods[] = {
+		{"__index", gfx_array_get},
+		{"__newindex", gfx_array_set},
+		{"__len", gfx_array_len},
+		{"__tostring", gfx_array_tostr},
+		{NULL, NULL},
+	};
+	
 	luaL_newmetatable(L, "wch.gfx.array");
+	luaL_setfuncs(L, gfx_array_methods, 0);
 	luaL_newlib(L, gfx_array_lib);
+	
 	return 1;
 }
 
