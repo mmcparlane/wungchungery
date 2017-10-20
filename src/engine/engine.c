@@ -389,8 +389,6 @@ static lua_State* initialize() {
 	// Add gfx lib
 	lua_pushcfunction(L, luaopen_gfx);
 	lua_call(L, 0, 1);
-	lua_getfield(L, -1, "initialize");
-	lua_call(L, 0, 0);
 	lua_setglobal(L, "gfx");
 
 	return L;
@@ -448,6 +446,11 @@ static int run(lua_State* L) {
 
 			lua_pop(L, 1);
 		}
+
+		// Initialize modules now that scripts have been loaded.
+		lua_getglobal(L, "gfx");
+		lua_getfield(L, -1, "initialize");
+		lua_call(L, 0, 0);
 
 		// Create update closure with 3 upvalues:
 		// interval, lag, before.
