@@ -45,42 +45,6 @@ static int gfx_initialize(lua_State* L) {
 
 		lua_getglobal(L, "gfx_initialize");
 		if (lua_isfunction(L, -1)) lua_call(L, 0, 0);
-
-		/*
-		// Temporary code to show something on the gl context.
-		GLuint vs = glCreateShader(GL_VERTEX_SHADER);
-		const char* vss = "attribute vec4 vPosition; uniform mat4 mat; void main(){ gl_Position = mat*vPosition;}";
-		glShaderSource(vs, 1, &vss, 0);
-		glCompileShader(vs);
-
-		GLuint fs = glCreateShader(GL_FRAGMENT_SHADER);
-		const char* fss = "precision lowp float; uniform vec3 color[3]; void main(){ gl_FragColor = vec4(1,0,0,1);}";
-		glShaderSource(fs, 1, &fss, 0);
-		glCompileShader(fs);
-
-		GLuint program = glCreateProgram();
-		glAttachShader(program, vs);
-		glAttachShader(program, fs);
-		glBindAttribLocation(program, 0, "vPosition");
-		glLinkProgram(program);
-		glUseProgram(program);
-
-		float verts[] = {0.0, 0.5, 0.0, -0.5, -0.5, 0.0, 0.5, -0.5, 0.0};
-		glBufferData(GL_ARRAY_BUFFER, sizeof(verts), verts, GL_STATIC_DRAW);
-		glVertexAttribPointer(0, 3, GL_FLOAT, 0, 0, 0);
-		glEnableVertexAttribArray(0);
-
-		int w, h;
-		emscripten_get_canvas_element_size(0, &w, &h);
-		float t = emscripten_get_now() / 1000.0f;
-		float xs = (float)h / w;
-		float ys = 1.0f;
-		float mat[] = {cosf(t)*xs, sinf(t)*ys, 0, 0, -sinf(t)*xs, cosf(t)*ys, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1};
-		glUniformMatrix4fv(glGetUniformLocation(program, "mat"), 1, 0, mat);
-		glClearColor(0, 0, 1, 1);
-		glClear(GL_COLOR_BUFFER_BIT);
-		glDrawArrays(GL_TRIANGLES, 0, 3);
-		*/
 	}
 
 	return 0;
@@ -278,6 +242,22 @@ static int gfx_array_tostr(lua_State* L) {
 	return 1;
 }
 
+static int gfx_bind_buffer(lua_State* L) {
+	GLenum target = (GLenum)luaL_checkinteger(L, 1);
+	GLuint buffer = (GLuint)luaL_checkinteger(L, 2);
+	glBindBuffer(target, buffer);
+	return 0;
+}
+
+static int gfx_buffer_data(lua_State* L) {
+        GLenum target = (GLenum)luaL_checkinteger(L, 1);
+	GLsizeiptr size = (GLsizeiptr)luaL_checkinteger(L, 2);
+	GLArray* data = luaL_checkudata(L, 3, "wch.gfx.array");
+	GLenum usage = (GLenum)luaL_checkinteger(L, 4);
+        glBufferData(target, size, &(data->byte_[0]), usage);
+	return 0;
+}
+
 static int gfx_array_len(lua_State* L) {
 	GLArray* a = luaL_checkudata(L, 1, "wch.gfx.array");
 	lua_pushinteger(L, a->len);
@@ -290,9 +270,53 @@ static int gfx_clear(lua_State* L) {
 	return 0;
 }
 
+static int gfx_clear_color(lua_State* L) {
+	GLclampf r, g, b, a;
+	r = (GLclampf)luaL_checknumber(L, 1);
+	g = (GLclampf)luaL_checknumber(L, 1);
+        b = (GLclampf)luaL_checknumber(L, 1);
+	a = (GLclampf)luaL_checknumber(L, 1);
+	return 0;
+}
+
+static int gfx_draw_arrays(lua_State* L) {
+	GLenum mode = (GLenum)luaL_checkinteger(L, 1);
+	GLint first = (GLint)luaL_checkinteger(L, 2);
+	GLsizei count = (GLsizei)luaL_checkinteger(L, 3);
+	glDrawArrays(mode, first, count);
+	return 0;
+}
+
+static int gfx_enable_vertex_attrib_array(lua_State* L) {
+	GLuint index = (GLuint)luaL_checkinteger(L, 1);
+	glEnableVertexAttribArray(index);
+	return 0;
+}
+
+static int gfx_gen_buffers(lua_State* L) {
+	GLsizei n = (GLsizei)luaL_checkinteger(L, 1);
+	luaL_argcheck(L, n > 0, 1, "must be greater than 0");
+	GLuint r[n];
+	glGenBuffers(n, r);
+	for (int i = 0; i < n; ++i) lua_pushinteger(L, r[i]);
+	return n;
+}
+
 static int gfx_use_program(lua_State* L) {
 	GLuint program = luaL_checkinteger(L, 1);
 	glUseProgram(program);
+	return 0;
+}
+
+static int gfx_vertex_attrib_pointer(lua_State* L) {
+	GLuint index = (GLuint)luaL_checkinteger(L, 1);
+	GLint size = (GLint)luaL_checkinteger(L, 2);
+	GLenum type = (GLenum)luaL_checkinteger(L, 3);	
+	GLboolean normalized = (GLboolean)lua_toboolean(L, 4);
+	GLsizei stride = (GLsizei)luaL_checkinteger(L, 5);
+	GLArray* a = luaL_checkudata(L, 6, "wch.gfx.array");
+
+	glVertexAttribPointer(index, size, type, normalized, stride, &(a->byte_[0]));
 	return 0;
 }
 
@@ -384,18 +408,6 @@ static int gfx_create_shader(lua_State* L) {
 	return 1;
 }
 
-static const luaL_Reg gfx_lib[] = {
-	{"initialize", gfx_initialize},
-	{"canvas_size", gfx_canvas_size},
-	{"create_shader", gfx_create_shader},
-	{"create_program", gfx_create_program},
-	{"clear", gfx_clear},
-	{"use_program", gfx_use_program},
-	{"viewport", gfx_viewport},
-	{NULL, NULL},
-};
-
-
 typedef struct GLEnumInfo GLEnumInfo;
 typedef struct GLBitfieldInfo GLBitfieldInfo;
 
@@ -412,11 +424,26 @@ struct GLBitfieldInfo {
 static const GLEnumInfo glenums[] = {
 	{"VERTEX_SHADER", GL_VERTEX_SHADER},
 	{"FRAGMENT_SHADER", GL_FRAGMENT_SHADER},
+
+	{"ARRAY_BUFFER", GL_ARRAY_BUFFER},
+	{"ELEMENT_ARRAY_BUFFER", GL_ELEMENT_ARRAY_BUFFER},
+	{"STREAM_DRAW", GL_STREAM_DRAW},
+	{"STATIC_DRAW", GL_STATIC_DRAW},
+	{"DYNAMIC_DRAW", GL_DYNAMIC_DRAW},
+	
 	{"BYTE", GL_BYTE},
 	{"UNSIGNED_BYTE", GL_UNSIGNED_BYTE},
 	{"SHORT", GL_SHORT},
 	{"UNSIGNED_SHORT", GL_UNSIGNED_SHORT},
 	{"FLOAT", GL_FLOAT},
+	
+	{"POINTS", GL_POINTS},
+	{"LINE_STRIP", GL_LINE_STRIP},
+	{"LINE_LOOP", GL_LINE_LOOP},
+	{"LINES", GL_LINES},
+	{"TRIANGLE_STRIP", GL_TRIANGLE_STRIP},
+	{"TRIANGLE_FAN", GL_TRIANGLE_FAN},
+	{"TRIANGLES", GL_TRIANGLES},
 };
 
 static const GLBitfieldInfo glbitfields[] = {
@@ -446,6 +473,21 @@ static int luaopen_gfx_array(lua_State* L) {
 	
 	return 1;
 }
+
+static const luaL_Reg gfx_lib[] = {
+	{"canvas_size", gfx_canvas_size},
+	{"create_shader", gfx_create_shader},
+	{"create_program", gfx_create_program},
+	{"clear", gfx_clear},
+	{"clear_color", gfx_clear_color},
+	{"draw_arrays", gfx_draw_arrays},
+	{"enable_vertex_attrib_array", gfx_enable_vertex_attrib_array},
+	{"initialize", gfx_initialize},
+	{"use_program", gfx_use_program},
+	{"vertex_attrib_pointer", gfx_vertex_attrib_pointer},
+	{"viewport", gfx_viewport},
+	{NULL, NULL},
+};
 
 int luaopen_gfx(lua_State* L) {
 	int i; int len;
