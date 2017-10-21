@@ -35,7 +35,8 @@ static const char* gfx_em_result(EMSCRIPTEN_RESULT r) {
 static int gfx_initialize(lua_State* L) {
 	EmscriptenWebGLContextAttributes a = {0};
 	emscripten_webgl_init_context_attributes(&a);
-	
+	a.alpha = 0;
+		
 	EMSCRIPTEN_WEBGL_CONTEXT_HANDLE c = emscripten_webgl_create_context(0, &a);
 	if (c < 0) {
 		fprintf(stderr, "gfx_initialize: Error '%s' creating context.\n", gfx_em_result(c));

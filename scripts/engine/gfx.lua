@@ -2,7 +2,7 @@
 
 function gfx_initialize()
 
-   gfx.clear_color(0.0, 0.0, 0.0, 0.0)
+   gfx.clear_color(0.0, 0.0, 0.0, 1.0)
 
    vertices = gfx.array.new(gfx.FLOAT,
 			    0.0, 0.5, 0.0,
