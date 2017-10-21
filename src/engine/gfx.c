@@ -314,9 +314,17 @@ static int gfx_vertex_attrib_pointer(lua_State* L) {
 	GLenum type = (GLenum)luaL_checkinteger(L, 3);	
 	GLboolean normalized = (GLboolean)lua_toboolean(L, 4);
 	GLsizei stride = (GLsizei)luaL_checkinteger(L, 5);
-	GLArray* a = luaL_checkudata(L, 6, "wch.gfx.array");
+	GLvoid* ptr = NULL;
+	if (lua_isuserdata(L, 6)) {
+		GLArray* a = luaL_checkudata(L, 6, "wch.gfx.array");
+		ptr = &(a->byte_[0]);
 
-	glVertexAttribPointer(index, size, type, normalized, stride, &(a->byte_[0]));
+	} else if (lua_isinteger(L, 6)) {
+		GLuint offset = (GLuint)lua_tointeger(L, 6);
+		ptr = (GLvoid*)offset;
+	}
+
+	glVertexAttribPointer(index, size, type, normalized, stride, ptr);
 	return 0;
 }
 
@@ -475,6 +483,8 @@ static int luaopen_gfx_array(lua_State* L) {
 }
 
 static const luaL_Reg gfx_lib[] = {
+	{"bind_buffer", gfx_bind_buffer},
+	{"buffer_data", gfx_buffer_data},
 	{"canvas_size", gfx_canvas_size},
 	{"create_shader", gfx_create_shader},
 	{"create_program", gfx_create_program},
@@ -482,6 +492,7 @@ static const luaL_Reg gfx_lib[] = {
 	{"clear_color", gfx_clear_color},
 	{"draw_arrays", gfx_draw_arrays},
 	{"enable_vertex_attrib_array", gfx_enable_vertex_attrib_array},
+	{"gen_buffers", gfx_gen_buffers},
 	{"initialize", gfx_initialize},
 	{"use_program", gfx_use_program},
 	{"vertex_attrib_pointer", gfx_vertex_attrib_pointer},
