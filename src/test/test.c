@@ -107,7 +107,7 @@ static int run(lua_State* L) {
 
 		lua_pushnil(L);
 		while (lua_next(L, iscripts)) {
-			printf("%lld - %s\n",
+			printf("%d - %s\n",
 			       lua_tointeger(L, -2),
 			       lua_tostring(L, -1));
 

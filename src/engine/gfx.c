@@ -226,6 +226,12 @@ static int gfx_array_set(lua_State* L) {
 	return 0;
 }
 
+static int gfx_array_len(lua_State* L) {
+	GLArray* a = luaL_checkudata(L, 1, "wch.gfx.array");
+	lua_pushinteger(L, a->len);
+	return 1;
+}
+
 static const char* gfx_array_typetostr(GLenum t) {
 	switch(t) {
 	case GL_BYTE: return "BYTE";
@@ -259,12 +265,6 @@ static int gfx_buffer_data(lua_State* L) {
 	return 0;
 }
 
-static int gfx_array_len(lua_State* L) {
-	GLArray* a = luaL_checkudata(L, 1, "wch.gfx.array");
-	lua_pushinteger(L, a->len);
-	return 1;
-}
-
 static int gfx_clear(lua_State* L) {
 	GLbitfield mask = luaL_checkinteger(L, 1);
 	glClear(mask);
@@ -273,10 +273,12 @@ static int gfx_clear(lua_State* L) {
 
 static int gfx_clear_color(lua_State* L) {
 	GLclampf r, g, b, a;
-	r = (GLclampf)luaL_checknumber(L, 1);
-	g = (GLclampf)luaL_checknumber(L, 1);
-        b = (GLclampf)luaL_checknumber(L, 1);
-	a = (GLclampf)luaL_checknumber(L, 1);
+	r = luaL_checknumber(L, 1);
+	g = luaL_checknumber(L, 2);
+        b = luaL_checknumber(L, 3);
+	a = luaL_checknumber(L, 4);
+
+	glClearColor(r, g, b, a);
 	return 0;
 }
 
