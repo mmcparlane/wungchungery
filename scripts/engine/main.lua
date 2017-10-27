@@ -1,25 +1,30 @@
 
 
-function oninput()
+engine.input = function()
    print("input")
 end
 
-function onupdate()
+engine.update = function()
    print("update")
 end
 
-function onrender(frameratio)
+engine.render = function(frameratio)
    print("render "..frameratio)
 end
 
-function onstart()
+engine.start = function()
    print("onstart")
 end
 
-function onstop()
+engine.stop = function()
    print("onstop")
 end
 
-function onpause()
+engine.pause = function()
    print("onpause")
 end
+
+engine.initialize = function()
+   gfx.initialize()
+end
+

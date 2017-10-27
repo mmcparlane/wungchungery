@@ -1,6 +1,8 @@
 
 
-function gfx_initialize()
+gfx.initialize = function()
+
+   gfx.create_context()
 
    gfx.clear_color(0.0, 0.0, 0.0, 1.0)
 

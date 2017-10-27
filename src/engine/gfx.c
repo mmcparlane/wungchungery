@@ -32,7 +32,9 @@ static const char* gfx_em_result(EMSCRIPTEN_RESULT r) {
 	}
 }
 
-static int gfx_initialize(lua_State* L) {
+static int gfx_create_context(lua_State* L) {
+	// TASK
+	//  Allow user to pass in table for initial attributes.
 	EmscriptenWebGLContextAttributes a = {0};
 	emscripten_webgl_init_context_attributes(&a);
 	a.alpha = 0;
@@ -43,9 +45,6 @@ static int gfx_initialize(lua_State* L) {
 		
 	} else {
 		emscripten_webgl_make_context_current(c);
-
-		lua_getglobal(L, "gfx_initialize");
-		if (lua_isfunction(L, -1)) lua_call(L, 0, 0);
 	}
 
 	return 0;
@@ -60,7 +59,7 @@ static int gfx_canvas_size(lua_State* L) {
 }
 
 #else
-static int gfx_initialize(lua_State* L) {
+static int gfx_create_context(lua_State* L) {
 	exit(EXIT_FAILURE);
 	return 0;
 }
@@ -489,6 +488,7 @@ static const luaL_Reg gfx_lib[] = {
 	{"bind_buffer", gfx_bind_buffer},
 	{"buffer_data", gfx_buffer_data},
 	{"canvas_size", gfx_canvas_size},
+	{"create_context", gfx_create_context},
 	{"create_shader", gfx_create_shader},
 	{"create_program", gfx_create_program},
 	{"clear", gfx_clear},
@@ -496,7 +496,6 @@ static const luaL_Reg gfx_lib[] = {
 	{"draw_arrays", gfx_draw_arrays},
 	{"enable_vertex_attrib_array", gfx_enable_vertex_attrib_array},
 	{"gen_buffers", gfx_gen_buffers},
-	{"initialize", gfx_initialize},
 	{"use_program", gfx_use_program},
 	{"vertex_attrib_pointer", gfx_vertex_attrib_pointer},
 	{"viewport", gfx_viewport},

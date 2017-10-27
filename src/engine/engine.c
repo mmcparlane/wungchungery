@@ -93,7 +93,7 @@ static void engine_em_update(void* data){
 
 	// Fetch update function and call it.
 	lua_getglobal(L, "engine");
-	lua_pushstring(L, "update");
+	lua_pushstring(L, "_update");
 	lua_gettable(L, -2);
 	lua_call(L, 0, 0);
 }
@@ -200,61 +200,73 @@ static int engine_onresumed(lua_State* L) {
 
 
 static int engine_start(lua_State* L) {
-	lua_getglobal(L, "onstart");
+	lua_getglobal(L, "engine");
+	
+	lua_getfield(L, -1, "start");
 	if (lua_isfunction(L, -1)) {
 		lua_call(L, 0, 0);
 			
 	} else {
 		lua_pop(L, 1);
 	}
+	
 	lua_pushcfunction(L, engine_onstarted);
 	lua_call(L, 0, 0);
 	
-	lua_getglobal(L, "engine");
 	lua_pushinteger(L, ENGINE_STARTED);
 	lua_setfield(L, -2, "state");
+	
 	return 0;
 }
 
 static int engine_stop(lua_State* L) {
-	lua_getglobal(L, "onstop");
+	lua_getglobal(L, "engine");
+	
+	lua_getfield(L, -1, "stop");
 	if (lua_isfunction(L, -1)) {
 		lua_call(L, 0, 0);
 			
 	} else {
 		lua_pop(L, 1);
 	}
-	lua_getglobal(L, "engine");
+
         lua_pushinteger(L, ENGINE_STOPPED);
-	lua_setfield(L, -2, "state");	
+	lua_setfield(L, -2, "state");
+	
 	return 0;
 }
 
 static int engine_pause(lua_State* L) {
-	lua_getglobal(L, "onpause");
+	lua_getglobal(L, "engine");
+	
+	lua_getfield(L, -1, "pause");
 	if (lua_isfunction(L, -1)) {
 		lua_call(L, 0, 0);
 			
 	} else {
 		lua_pop(L, 1);
 	}
-	lua_getglobal(L, "engine");
+
 	lua_pushinteger(L, ENGINE_PAUSED);
 	lua_setfield(L, -2, "state");
+	
 	return 0;
 }
 
 static int engine_resume(lua_State* L) {
-	lua_getglobal(L, "onresume");
+	lua_getglobal(L, "engine");
+	
+	lua_getfield(L, -1, "resume");
 	if (lua_isfunction(L, -1)) {
 		lua_call(L, 0, 0);
 			
 	} else {
 		lua_pop(L, 1);
 	}
-	lua_getglobal(L, "engine");
+
 	lua_pushinteger(L, ENGINE_RESUMED);
-	lua_setfield(L, -2, "state");	
+	lua_setfield(L, -2, "state");
+	
 	return 0;
 }
 
@@ -262,7 +274,9 @@ static int engine_update(lua_State* L) {
 	lua_Number lag, now, before, gap, interval;
 
 	lua_getglobal(L, "engine");
-	lua_getfield(L, -1, "state");
+	int iengine = lua_gettop(L);
+	
+	lua_getfield(L, iengine, "state");
 	switch(lua_tointeger(L, -1)) {
 	case ENGINE_STARTED:
 		//  Update 'before' time
@@ -307,7 +321,7 @@ static int engine_update(lua_State* L) {
 	
 	lag += gap;
 
-	lua_getglobal(L, "oninput");
+	lua_getfield(L, iengine, "input");
 	if (lua_isfunction(L, -1)) {
 		lua_call(L, 0, 0);
 
@@ -317,7 +331,7 @@ static int engine_update(lua_State* L) {
 
 	while (lag >= interval) {
 		
-		lua_getglobal(L, "onupdate");
+		lua_getfield(L, iengine, "update");
 		if (lua_isfunction(L, -1)) {
 			lua_call(L, 0, 0);
 			
@@ -328,7 +342,7 @@ static int engine_update(lua_State* L) {
 		lag -= interval;
 	}
 
-	lua_getglobal(L, "onrender");
+	lua_getfield(L, iengine, "render");
 	if (lua_isfunction(L, -1)) {
 		lua_pushnumber(L, (lag / interval));
 		lua_call(L, 1, 0);
@@ -450,25 +464,20 @@ static int run(lua_State* L) {
 		}
 
 		// Initialize modules now that scripts have been loaded.
-		lua_getglobal(L, "gfx");
-		lua_getfield(L, -1, "initialize");
-		lua_call(L, 0, 0);
+		lua_getfield(L, iengine, "initialize");
+		if (lua_isfunction(L, -1)) lua_call(L, 0, 0);
 
 		// Create update closure with 3 upvalues:
 		// interval, lag, before.
-		lua_pushstring(L, "update");
-		
+		lua_pushstring(L, "_update");
 		lua_getfield(L, iargs, "interval");
 	        if (lua_isnil(L, -1)) {
 			lua_pushstring(L, "Required parameter 'interval' is missing.");
 			return lua_error(L);
 		}
-		
 		lua_pushnumber(L, 0.0);
-		
 		lua_pushcfunction(L, engine_clock_now);
 		lua_call(L, 0, 1);
-		
 		lua_pushcclosure(L, engine_update, 3);
 		lua_settable(L, iengine);
 		
