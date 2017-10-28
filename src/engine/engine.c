@@ -11,6 +11,7 @@
 #include "args.h"
 #include "fs.h"
 #include "gfx.h"
+#include "math.h"
 
 #define DBG() printf("top: '%d', type: '%s'\n", lua_gettop(L), lua_typename(L, lua_type(L, -1)))
 
@@ -367,6 +368,7 @@ static const luaL_Reg engine_lib[] = {
 };
 
 static lua_State* initialize() {
+	int i, j;
 	lua_State* L = luaL_newstate();
 
 	// Add standard libs
@@ -402,6 +404,19 @@ static lua_State* initialize() {
 	lua_call(L, 0, 1);
 	lua_setglobal(L, "fs");
 
+	// Extend math lib with matrices/vectors
+	lua_pushcfunction(L, luaopen_math2);
+	lua_call(L, 0, 1);
+	i = lua_gettop(L);
+	
+	lua_getglobal(L, "math");
+	j = lua_gettop(L);
+	
+	lua_pushnil(L);
+	while (lua_next(L, i)) {
+		lua_setfield(L, j, lua_tostring(L, -2));
+	}
+	
 	// Add gfx lib
 	lua_pushcfunction(L, luaopen_gfx);
 	lua_call(L, 0, 1);

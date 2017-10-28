@@ -58,6 +58,7 @@ ENGINE_OBJ_DIR = $(BUILD_DIR)\engine
 ENGINE_OBJS = $(ENGINE_OBJ_DIR)\args.$(OBJ_EXT) \
 	      $(ENGINE_OBJ_DIR)\fs.$(OBJ_EXT) \
 	      $(ENGINE_OBJ_DIR)\engine.$(OBJ_EXT) \
+	      $(ENGINE_OBJ_DIR)\math.$(OBJ_EXT) \
 	      $(ENGINE_OBJ_DIR)\gfx.$(OBJ_EXT)
 
 LUA_OBJ_DIR = $(BUILD_DIR)\lua
