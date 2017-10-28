@@ -3,6 +3,7 @@
 //
 #include <stdlib.h>
 #include <stdio.h>
+#include <string.h>
 #include "lua.h"
 #include "lauxlib.h"
 #include "lualib.h"
@@ -33,12 +34,50 @@ static const char* gfx_em_result(EMSCRIPTEN_RESULT r) {
 }
 
 static int gfx_create_context(lua_State* L) {
-	// TASK
-	//  Allow user to pass in table for initial attributes.
-	EmscriptenWebGLContextAttributes a = {0};
+	EmscriptenWebGLContextAttributes a;
 	emscripten_webgl_init_context_attributes(&a);
-	a.alpha = 0;
-		
+	
+        if (lua_istable(L, 1)) {
+		lua_pushnil(L);
+		while(lua_next(L, 1)) {
+			if(strcmp(lua_tostring(L, -2), "alpha") == 0) {
+				a.alpha = lua_toboolean(L, -1);
+				
+			} else if(strcmp(lua_tostring(L, -2), "depth") == 0) {
+				a.depth = lua_toboolean(L, -1);
+				
+			} else if(strcmp(lua_tostring(L, -2), "stencil") == 0) {
+				a.stencil = lua_toboolean(L, -1);
+
+			} else if(strcmp(lua_tostring(L, -2), "antialias") == 0) {
+				a.antialias = lua_toboolean(L, -1);
+
+			} else if(strcmp(lua_tostring(L, -2), "premultipliedAlpha") == 0) {
+				a.premultipliedAlpha = lua_toboolean(L, -1);
+
+			} else if(strcmp(lua_tostring(L, -2), "preserveDrawingBuffer") == 0) {
+				a.preserveDrawingBuffer = lua_toboolean(L, -1);
+
+			} else if(strcmp(lua_tostring(L, -2), "preferLowPowerToHighPerformance") == 0) {
+				a.preferLowPowerToHighPerformance = lua_toboolean(L, -1);
+
+			} else if(strcmp(lua_tostring(L, -2), "failIfMajorPerformanceCaveat") == 0) {
+				a.failIfMajorPerformanceCaveat = lua_toboolean(L, -1);
+
+			} else if(strcmp(lua_tostring(L, -2), "majorVersion") == 0) {
+				a.majorVersion = lua_tointeger(L, -1);
+
+			} else if(strcmp(lua_tostring(L, -2), "minorVersion") == 0) {
+				a.minorVersion = lua_tointeger(L, -1);
+
+			} else if(strcmp(lua_tostring(L, -2), "enableExtensionsByDefault") == 0) {
+				a.enableExtensionsByDefault = lua_toboolean(L, -1);
+
+			}
+			lua_pop(L, 1);
+		}
+	}
+
 	EMSCRIPTEN_WEBGL_CONTEXT_HANDLE c = emscripten_webgl_create_context(0, &a);
 	if (c < 0) {
 		fprintf(stderr, "gfx_initialize: Error '%s' creating context.\n", gfx_em_result(c));
